@@ -116,7 +116,7 @@ def convert_ministral_tokenizer(input_dir):
 
 def convert_ministral_model(input_dir, output_dir):
     # Load and convert config
-    with open(os.path.join(input_dir, "config.json")) as f:
+    with open(os.path.join(input_dir, "params.json")) as f:
         original_config = json.load(f)
     config = convert_config(original_config)
     config.save_pretrained(output_dir)
