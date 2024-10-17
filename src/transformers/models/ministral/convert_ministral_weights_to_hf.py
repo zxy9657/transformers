@@ -29,8 +29,8 @@ STATE_DICT_MAPPING = {
 
     # MLP keys
     r"layers.(\d+).feed_forward.w1.weight":      r"model.layers.\1.mlp.gate_proj.weight",
-    r"layers.(\d+).feed_forward.w2.weight":      r"model.layers.\1.mlp.up_proj.weight",
-    r"layers.(\d+).feed_forward.w3.weight":      r"model.layers.\1.mlp.down_proj.weight",
+    r"layers.(\d+).feed_forward.w2.weight":      r"model.layers.\1.mlp.down_proj.weight",
+    r"layers.(\d+).feed_forward.w3.weight":      r"model.layers.\1.mlp.up_proj.weight",
 }
 # fmt: on
 
