@@ -13,24 +13,24 @@ from transformers import MinistralConfig, MinistralForCausalLM, PreTrainedTokeni
 # fmt: off
 STATE_DICT_MAPPING = {
     # CausalLM keys
-    r"output.weight":                            r"lm_head.weight",
+    r"^output.weight":                            r"lm_head.weight",
 
     # Model keys
-    r"norm.weight":                              r"model.norm.weight",
-    r"tok_embeddings.weight":                    r"model.embed_tokens.weight",
+    r"^norm.weight":                              r"model.norm.weight",
+    r"^tok_embeddings.weight":                    r"model.embed_tokens.weight",
 
     # Layers keys
-    r"layers.(\d+).attention_norm.weight":       r"model.layers.\1.input_layernorm.weight",
-    r"layers.(\d+).ffn_norm.weight":             r"model.layers.\1.post_attention_layernorm.weight",
+    r"^layers.(\d+).attention_norm.weight":       r"model.layers.\1.input_layernorm.weight",
+    r"^layers.(\d+).ffn_norm.weight":             r"model.layers.\1.post_attention_layernorm.weight",
 
     # Attention keys
-    r"layers.(\d+).attention.w(q|k|v|o).weight": r"model.layers.\1.self_attn.\2_proj.weight",
+    r"^layers.(\d+).attention.w(q|k|v|o).weight": r"model.layers.\1.self_attn.\2_proj.weight",
 
 
     # MLP keys
-    r"layers.(\d+).feed_forward.w1.weight":      r"model.layers.\1.mlp.gate_proj.weight",
-    r"layers.(\d+).feed_forward.w2.weight":      r"model.layers.\1.mlp.down_proj.weight",
-    r"layers.(\d+).feed_forward.w3.weight":      r"model.layers.\1.mlp.up_proj.weight",
+    r"^layers.(\d+).feed_forward.w1.weight":      r"model.layers.\1.mlp.gate_proj.weight",
+    r"^layers.(\d+).feed_forward.w2.weight":      r"model.layers.\1.mlp.down_proj.weight",
+    r"^layers.(\d+).feed_forward.w3.weight":      r"model.layers.\1.mlp.up_proj.weight",
 }
 # fmt: on
 
