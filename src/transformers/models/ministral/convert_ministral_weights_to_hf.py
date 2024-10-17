@@ -55,17 +55,18 @@ def convert_state_dict(original_state_dict: dict, config: MinistralConfig):
     for old_key, value in original_state_dict.items():
         new_key = map_old_key_to_new(old_key)
 
-        if "qkv_proj." in new_key:
-            q_proj, k_proj, v_proj = (
-                value[:query_size, ...],
-                value[query_size : query_size + kv_size, ...],
-                value[query_size + kv_size :, ...],
-            )
-            new_dict[new_key.replace("qkv_proj.", "q_proj.")] = q_proj
-            new_dict[new_key.replace("qkv_proj.", "k_proj.")] = k_proj
-            new_dict[new_key.replace("qkv_proj.", "v_proj.")] = v_proj
-        else:
-            new_dict[new_key] = value
+        # if "qkv_proj." in new_key:
+        #     q_proj, k_proj, v_proj = (
+        #         value[:query_size, ...],
+        #         value[query_size : query_size + kv_size, ...],
+        #         value[query_size + kv_size :, ...],
+        #     )
+        #     new_dict[new_key.replace("qkv_proj.", "q_proj.")] = q_proj
+        #     new_dict[new_key.replace("qkv_proj.", "k_proj.")] = k_proj
+        #     new_dict[new_key.replace("qkv_proj.", "v_proj.")] = v_proj
+        # else:
+        #     new_dict[new_key] = value
+        new_dict[new_key] = value
     return new_dict
 
 
