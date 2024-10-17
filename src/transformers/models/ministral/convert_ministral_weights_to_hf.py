@@ -5,9 +5,8 @@ import re
 
 import torch
 from safetensors.torch import load_file
-from tokenizers import processors
 
-from transformers import MinistralConfig, MinistralForCausalLM, PreTrainedTokenizerFast
+from transformers import AutoTokenizer
 
 
 # fmt: off
@@ -52,7 +51,7 @@ def permute_for_rope(value, config):
     return value.view(n_heads, dim1 // n_heads // 2, 2, dim2).transpose(1, 2).reshape(dim1, dim2)
 
 
-def convert_state_dict(original_state_dict: dict, config: MinistralConfig):
+def convert_state_dict(original_state_dict: dict, config):
     new_dict = {}
 
     for old_key, value in original_state_dict.items():
@@ -65,7 +64,7 @@ def convert_state_dict(original_state_dict: dict, config: MinistralConfig):
     return new_dict
 
 
-def convert_config(original_config: dict):
+def convert_config(original_config: dict, config_class):
     key_mapping = {
         "hidden_size": "dim",
         "num_hidden_layers": "n_layers",
@@ -88,45 +87,44 @@ def convert_config(original_config: dict):
     new_config_kwargs["sliding_window"] = min(x for x in original_config["_sliding_window"] if x is not None)
     # new_config_kwargs["cache_implementation"] = "hybrid"
 
-    new_config = MinistralConfig(**new_config_kwargs)
+    new_config = config_class(**new_config_kwargs)
     return new_config
 
 
 def convert_ministral_tokenizer(input_dir):
-    fast_tok = PreTrainedTokenizerFast.from_pretrained(input_dir, model_input_names=["input_ids", "attention_mask"])
-    # Add the two tokens automatically with post processor
-    fast_tok._tokenizer.post_processor = processors.Sequence(
-        [
-            processors.ByteLevel(trim_offsets=False),
-            processors.TemplateProcessing(
-                single="[gMASK]:0 <sop>:0 $A:0",
-                pair="[gMASK]:0 <sop>:0 $A:0 $B:1",
-                special_tokens=[("[gMASK]", 151331), ("<sop>", 151333)],
-            ),
-        ],
-    )
+    tokenizer = AutoTokenizer.from_pretrained(input_dir)
 
-    return fast_tok
+    return tokenizer
 
 
-def convert_ministral_model(input_dir, output_dir):
+def convert_ministral_model(input_dir, output_dir, class_name: str):
+
+    if class_name == "Mistral":
+        from transformers import MistralConfig, MistralForCausalLM
+        model_class = MistralForCausalLM
+        config_class = MistralConfig
+    elif class_name == "Ministral":
+        from transformers import MinistralConfig, MinistralForCausalLM
+        model_class = MinistralForCausalLM
+        config_class = MinistralConfig
+
     # Load and convert config
     with open(os.path.join(input_dir, "params.json")) as f:
         original_config = json.load(f)
-    config = convert_config(original_config)
+    config = convert_config(original_config, config_class)
     config.save_pretrained(output_dir)
 
     # Load and convert weights
     original_state_dict = load_file(os.path.join(input_dir, "consolidated.safetensors"))
     new_dict = convert_state_dict(original_state_dict, config)
     with torch.device("meta"):
-        model = MinistralForCausalLM(config)
+        model = model_class(config)
     model.load_state_dict(new_dict, strict=True, assign=True)
     model.save_pretrained(output_dir)
 
     # Load and convert tokenizer
-    # tokenizer = convert_ministral_tokenizer(input_dir)
-    # tokenizer.save_pretrained(output_dir)
+    tokenizer = convert_ministral_tokenizer(input_dir)
+    tokenizer.save_pretrained(output_dir)
 
 
 if __name__ == "__main__":
@@ -141,6 +139,12 @@ if __name__ == "__main__":
         type=str,
         help="Location to write HF model and tokenizer",
     )
+    parser.add_argument(
+        "model",
+        type=str,
+        help="Model class. Mistral or Ministral (We use Mistral while waiting for new model definition).",
+        choices=["Mistral", "Ministral"]
+    )
 
     args = parser.parse_args()
-    convert_ministral_model(args.input_dir, args.output_dir)
+    convert_ministral_model(args.input_dir, args.output_dir, args.model)
