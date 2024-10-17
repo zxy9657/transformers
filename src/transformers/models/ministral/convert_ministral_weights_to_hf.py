@@ -44,21 +44,29 @@ def map_old_key_to_new(old_key):
     raise ValueError(f"Key: {old_key} could not be mapped (check the mapping).")
 
 
-def permute_for_rope(value, config):
-    n_heads = config.num_attention_heads
-    dim1 = value.shape[0]
-    dim2 = config.hidden_size
+def permute_for_rope(value, n_heads, dim1, dim2):
     return value.view(n_heads, dim1 // n_heads // 2, 2, dim2).transpose(1, 2).reshape(dim1, dim2)
 
 
 def convert_state_dict(original_state_dict: dict, config):
     new_dict = {}
 
+    n_heads = config.num_attention_heads
+    dim = config.hidden_size
+    dims_per_head = dim // n_heads
+    num_key_value_heads = config.num_key_value_heads
+    key_value_dim = dims_per_head * num_key_value_heads
+
+
     for old_key, value in original_state_dict.items():
         new_key = map_old_key_to_new(old_key)
 
-        if "q_proj" in new_key or "k_proj" in new_key:
-            value = permute_for_rope(value, config)
+        if "q_proj" in new_key:
+            value = permute_for_rope(value.view(n_heads, dims_per_head, dim).reshape(dim, dim), n_heads, dim, dim)
+        elif "k_proj" in new_key:
+            value = permute_for_rope(value.view(num_key_value_heads, dims_per_head, dim).reshape(key_value_dim, dim), num_key_value_heads, key_value_dim, dim)
+        elif "v_proj" in new_key:
+            value = value.view(num_key_value_heads, dims_per_head, dim).reshape(key_value_dim, dim)
 
         new_dict[new_key] = value
     return new_dict
@@ -92,7 +100,34 @@ def convert_config(original_config: dict, config_class):
 
 
 def convert_ministral_tokenizer(input_dir):
-    tokenizer = AutoTokenizer.from_pretrained(input_dir)
+    tokenizer = AutoTokenizer.from_pretrained("mistralai/Ministral-8B-Instruct-2410")
+    template = """
+{%- if messages[0]['role'] == 'system' %}
+    {%- set system_message = messages[0]['content'] %}
+    {%- set loop_messages = messages[1:] %}
+{%- else %}
+    {%- set loop_messages = messages %}
+{%- endif %}
+
+{{- bos_token }}
+{%- for message in loop_messages %}
+    {%- if (message['role'] == 'user') != (loop.index0 % 2 == 0) %}
+        {{- raise_exception('After the optional system message, conversation roles must alternate user/assistant/user/assistant/...') }}
+    {%- endif %}
+    {%- if message['role'] == 'user' %}
+        {%- if loop.first and system_message is defined %}
+            {{- '[INST]' + system_message + '\n\n' + message['content'] + '[/INST]' }}
+        {%- else %}
+            {{- '[INST]' + message['content'] + '[/INST]' }}
+        {%- endif %}
+    {%- elif message['role'] == 'assistant' %}
+        {{- message['content'] + eos_token}}
+    {%- else %}
+        {{- raise_exception('Only user and assistant roles are supported, with the exception of an initial optional system message!') }}
+    {%- endif %}
+{%- endfor %}""".lstrip()
+    
+    tokenizer.chat_template = template
 
     return tokenizer
 
