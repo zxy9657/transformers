@@ -48,9 +48,9 @@ def map_old_key_to_new(old_key):
 def convert_state_dict(original_state_dict: dict, config: MinistralConfig):
     new_dict = {}
 
-    head_dim = config.hidden_size // config.num_attention_heads
-    query_size = config.num_attention_heads * head_dim
-    kv_size = config.num_key_value_heads * head_dim
+    # head_dim = config.hidden_size // config.num_attention_heads
+    # query_size = config.num_attention_heads * head_dim
+    # kv_size = config.num_key_value_heads * head_dim
 
     for old_key, value in original_state_dict.items():
         new_key = map_old_key_to_new(old_key)
@@ -130,8 +130,8 @@ def convert_ministral_model(input_dir, output_dir):
     model.save_pretrained(output_dir)
 
     # Load and convert tokenizer
-    tokenizer = convert_ministral_tokenizer(input_dir)
-    tokenizer.save_pretrained(output_dir)
+    # tokenizer = convert_ministral_tokenizer(input_dir)
+    # tokenizer.save_pretrained(output_dir)
 
 
 if __name__ == "__main__":
