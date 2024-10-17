@@ -45,27 +45,22 @@ def map_old_key_to_new(old_key):
     raise ValueError(f"Key: {old_key} could not be mapped (check the mapping).")
 
 
+def permute_for_rope(value, config):
+    n_heads = config.num_attention_heads
+    dim1 = value.shape[0]
+    dim2 = config.hidden_size
+    return value.view(n_heads, dim1 // n_heads // 2, 2, dim2).transpose(1, 2).reshape(dim1, dim2)
+
+
 def convert_state_dict(original_state_dict: dict, config: MinistralConfig):
     new_dict = {}
-
-    # head_dim = config.hidden_size // config.num_attention_heads
-    # query_size = config.num_attention_heads * head_dim
-    # kv_size = config.num_key_value_heads * head_dim
 
     for old_key, value in original_state_dict.items():
         new_key = map_old_key_to_new(old_key)
 
-        # if "qkv_proj." in new_key:
-        #     q_proj, k_proj, v_proj = (
-        #         value[:query_size, ...],
-        #         value[query_size : query_size + kv_size, ...],
-        #         value[query_size + kv_size :, ...],
-        #     )
-        #     new_dict[new_key.replace("qkv_proj.", "q_proj.")] = q_proj
-        #     new_dict[new_key.replace("qkv_proj.", "k_proj.")] = k_proj
-        #     new_dict[new_key.replace("qkv_proj.", "v_proj.")] = v_proj
-        # else:
-        #     new_dict[new_key] = value
+        if "q_proj" in new_key or "k_proj" in new_key:
+            value = permute_for_rope(value, config)
+
         new_dict[new_key] = value
     return new_dict
 
