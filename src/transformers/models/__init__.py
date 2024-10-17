@@ -153,6 +153,7 @@ from . import (
     mgp_str,
     mimi,
     mistral,
+    ministral,
     mixtral,
     mllama,
     mluke,

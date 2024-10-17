@@ -299,6 +299,7 @@ else:
                     "LlamaTokenizerFast" if is_tokenizers_available() else None,
                 ),
             ),
+            ("ministral", (None, "PreTrainedTokenizerFast" if is_tokenizers_available() else None)),
             (
                 "mixtral",
                 (
