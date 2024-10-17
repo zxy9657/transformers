@@ -90,7 +90,7 @@ def convert_config(original_config: dict):
     # IMPORTANT:
     # This if fine for now as they limited the max_seq_len to the sliding window anyway! But improve later!
     new_config_kwargs["sliding_window"] = min(x for x in original_config["_sliding_window"] if x is not None)
-    new_config_kwargs["cache_implementation"] = "hybrid"
+    # new_config_kwargs["cache_implementation"] = "hybrid"
 
     new_config = MinistralConfig(**new_config_kwargs)
     return new_config
