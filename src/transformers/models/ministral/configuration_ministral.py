@@ -26,7 +26,6 @@
 
 
 from ...configuration_utils import PretrainedConfig
-from .configuration_ministral import MinistralConfig
 
 
 class MinistralConfig(PretrainedConfig):

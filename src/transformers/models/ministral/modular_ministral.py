@@ -20,46 +20,32 @@
 """PyTorch Ministral model."""
 
 import math
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Tuple
 
 import torch
 import torch.utils.checkpoint
 from torch import nn
-from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
-from ...activations import ACT2FN
-from ...cache_utils import Cache, DynamicCache, SlidingWindowCache, StaticCache
-from ...generation import GenerationMixin
-from ...modeling_attn_mask_utils import AttentionMaskConverter
-from ...modeling_outputs import (
-    BaseModelOutputWithPast,
-    CausalLMOutputWithPast,
-    QuestionAnsweringModelOutput,
-    SequenceClassifierOutputWithPast,
-    TokenClassifierOutput,
-)
-from ...modeling_utils import PreTrainedModel
+from ...cache_utils import Cache
 from ...utils import (
     logging,
 )
-from .configuration_ministral import MinistralConfig
+from ..gemma2.modeling_gemma2 import (
+    Gemma2Attention,
+    Gemma2FlashAttention2,
+    Gemma2SdpaAttention,
+)
 from ..mistral.configuration_mistral import MistralConfig
 from ..mistral.modeling_mistral import (
-    MistralRMSNorm,
-    MistralRotaryEmbedding,
-    MistralMLP,
     MistralDecoderLayer,
-    MistralModel,
-    MistralPreTrainedModel,
     MistralForCausalLM,
     MistralForSequenceClassification,
     MistralForTokenClassification,
-
-)
-from ..gemma2.modeling_gemma2 import (
-    Gemma2Attention,
-    Gemma2SdpaAttention,
-    Gemma2FlashAttention2,
+    MistralMLP,
+    MistralModel,
+    MistralPreTrainedModel,
+    MistralRMSNorm,
+    MistralRotaryEmbedding,
 )
 
 
@@ -79,7 +65,6 @@ class MinistralRotaryEmbedding(MistralRotaryEmbedding):
     pass
 
 
-
 class MinistralMLP(MistralMLP):
     pass
 
@@ -96,7 +81,7 @@ class MinistralAttention(Gemma2Attention):
             max_position_embeddings=self.max_position_embeddings,
             base=self.rope_theta,
         )
-        self.scaling = 1. / math.sqrt(self.head_dim)
+        self.scaling = 1.0 / math.sqrt(self.head_dim)
 
 
 class MinistralFlashAttention2(MinistralAttention, Gemma2FlashAttention2):
@@ -194,7 +179,6 @@ class MinistralDecoderLayer(MistralDecoderLayer):
         return outputs
 
 
-
 class MinistralPreTrainedModel(MistralPreTrainedModel):
     pass
 
@@ -211,7 +195,6 @@ class MinistralForCausalLM(MistralForCausalLM):
     def __init__(self, config):
         super().__init__(config)
         self.model = MinistralModel(config)
-
 
 
 class MinistralForSequenceClassification(MistralForSequenceClassification):

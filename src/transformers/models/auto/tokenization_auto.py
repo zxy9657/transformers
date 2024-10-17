@@ -292,6 +292,7 @@ else:
             ("mega", ("RobertaTokenizer", "RobertaTokenizerFast" if is_tokenizers_available() else None)),
             ("megatron-bert", ("BertTokenizer", "BertTokenizerFast" if is_tokenizers_available() else None)),
             ("mgp-str", ("MgpstrTokenizer", None)),
+            ("ministral", (None, "PreTrainedTokenizerFast" if is_tokenizers_available() else None)),
             (
                 "mistral",
                 (
@@ -299,7 +300,6 @@ else:
                     "LlamaTokenizerFast" if is_tokenizers_available() else None,
                 ),
             ),
-            ("ministral", (None, "PreTrainedTokenizerFast" if is_tokenizers_available() else None)),
             (
                 "mixtral",
                 (

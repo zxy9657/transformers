@@ -5449,8 +5449,8 @@ if TYPE_CHECKING:
     from .models.mimi import (
         MimiConfig,
     )
-    from .models.mistral import MistralConfig
     from .models.ministral import MinistralConfig
+    from .models.mistral import MistralConfig
     from .models.mixtral import MixtralConfig
     from .models.mllama import (
         MllamaConfig,
@@ -7353,14 +7353,6 @@ if TYPE_CHECKING:
             MimiModel,
             MimiPreTrainedModel,
         )
-        from .models.mistral import (
-            MistralForCausalLM,
-            MistralForQuestionAnswering,
-            MistralForSequenceClassification,
-            MistralForTokenClassification,
-            MistralModel,
-            MistralPreTrainedModel,
-        )
         from .models.ministral import (
             MinistralForCausalLM,
             MinistralForQuestionAnswering,
@@ -7368,6 +7360,14 @@ if TYPE_CHECKING:
             MinistralForTokenClassification,
             MinistralModel,
             MinistralPreTrainedModel,
+        )
+        from .models.mistral import (
+            MistralForCausalLM,
+            MistralForQuestionAnswering,
+            MistralForSequenceClassification,
+            MistralForTokenClassification,
+            MistralModel,
+            MistralPreTrainedModel,
         )
         from .models.mixtral import (
             MixtralForCausalLM,
