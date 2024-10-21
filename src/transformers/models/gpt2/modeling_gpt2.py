@@ -29,7 +29,6 @@ from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 from torch.nn.attention.flex_attention import create_block_mask, flex_attention
 
-
 from ...activations import ACT2FN
 from ...generation import GenerationMixin
 from ...modeling_attn_mask_utils import _prepare_4d_attention_mask_for_sdpa, _prepare_4d_causal_attention_mask_for_sdpa
@@ -587,7 +586,6 @@ class GPT2FlexAttention(GPT2Attention):
         # Reference: https://github.com/pytorch/pytorch/issues/112577
         self.require_contiguous_qkv = version.parse(get_torch_version()) < version.parse("2.2.0")
 
-    
     def forward(
         self,
         hidden_states: Optional[Tuple[torch.FloatTensor]],
@@ -661,12 +659,18 @@ class GPT2FlexAttention(GPT2Attention):
         # in SDPA to support both torch.compile's dynamic shapes and full graph options. An inline conditional prevents dynamic shapes from compiling.
         is_causal = True if attention_mask is None and q_len > 1 and not is_cross_attention else False
 
-
         def causal_mask(b, h, q_idx, kv_idx):
             return q_idx >= kv_idx
-            
-        block_mask = create_block_mask_cached(causal_mask, bsz, self.num_heads, q_len, kv_len, device=query.device) if is_causal else None
 
+        block_mask = (
+            create_block_mask_cached(causal_mask, bsz, self.num_heads, q_len, kv_len, device=query.device)
+            if is_causal
+            else None
+        )
+
+        import pdb
+
+        pdb.set_trace()
         attn_output = flex_attention(
             query,
             key,
@@ -683,6 +687,7 @@ class GPT2FlexAttention(GPT2Attention):
         attn_output = self.resid_dropout(attn_output)
 
         return attn_output, present, None
+
 
 class GPT2MLP(nn.Module):
     def __init__(self, intermediate_size, config):
@@ -701,7 +706,12 @@ class GPT2MLP(nn.Module):
         return hidden_states
 
 
-GPT2_ATTENTION_CLASSES = {"eager": GPT2Attention, "flash_attention_2": GPT2FlashAttention2, "sdpa": GPT2SdpaAttention, "flex": GPT2FlexAttention}
+GPT2_ATTENTION_CLASSES = {
+    "eager": GPT2Attention,
+    "flash_attention_2": GPT2FlashAttention2,
+    "sdpa": GPT2SdpaAttention,
+    "flex": GPT2FlexAttention,
+}
 
 
 class GPT2Block(nn.Module):
@@ -798,6 +808,7 @@ class GPT2PreTrainedModel(PreTrainedModel):
     _skip_keys_device_placement = "past_key_values"
     _supports_flash_attn_2 = True
     _supports_sdpa = True
+    _supports_flex_attention = True
 
     def __init__(self, *inputs, **kwargs):
         super().__init__(*inputs, **kwargs)
