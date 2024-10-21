@@ -663,14 +663,10 @@ class GPT2FlexAttention(GPT2Attention):
             return q_idx >= kv_idx
 
         block_mask = (
-            create_block_mask_cached(causal_mask, bsz, self.num_heads, q_len, kv_len, device=query.device)
+            create_block_mask_cached(causal_mask, bsz, self.num_heads, q_len, kv_len, device=query.device,)
             if is_causal
             else None
         )
-
-        import pdb
-
-        pdb.set_trace()
         attn_output = flex_attention(
             query,
             key,

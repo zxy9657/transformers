@@ -1615,6 +1615,8 @@ class PreTrainedModel(nn.Module, ModuleUtilsMixin, GenerationMixin, PushToHubMix
                     "Using the `SDPA` attention implementation on multi-gpu setup with ROCM may lead to performance issues due to the FA backend. Disabling it to use alternative backends."
                 )
                 torch.backends.cuda.enable_flash_sdp(False)
+        elif requested_attn_implementation == "flex":
+            config._attn_implementation = "flex"
         else:
             config._attn_implementation = "eager"
 

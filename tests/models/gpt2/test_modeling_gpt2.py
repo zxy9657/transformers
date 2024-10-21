@@ -939,3 +939,38 @@ class GPT2ModelLanguageGenerationTest(unittest.TestCase):
 
         self.assertListEqual(output_native, output_fa_2)
         self.assertListEqual(output_native, expected_output)
+
+    @require_torch_gpu
+    @slow
+    def test_flex_attention_generate_padding_left(self):
+        """
+        Overwritting the common test as the test is flaky on tiny models
+        """
+        model = GPT2LMHeadModel.from_pretrained("gpt2", torch_dtype=torch.float16).to(0)
+
+        tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+
+        texts = ["hi", "Hello this is a very long sentence"]
+
+        tokenizer.padding_side = "left"
+        tokenizer.pad_token = tokenizer.eos_token
+
+        inputs = tokenizer(texts, return_tensors="pt", padding=True).to(0)
+
+        output_native = model.generate(**inputs, max_new_tokens=20, do_sample=False)
+        output_native = tokenizer.batch_decode(output_native)
+
+        model = GPT2LMHeadModel.from_pretrained(
+            "gpt2", device_map={"": 0}, attn_implementation="flex", torch_dtype=torch.float16
+        )
+
+        output_flex = model.generate(**inputs, max_new_tokens=20, do_sample=False)
+        output_flex = tokenizer.batch_decode(output_flex)
+
+        expected_output = [
+            "<|endoftext|><|endoftext|><|endoftext|><|endoftext|><|endoftext|><|endoftext|>hi, who was born in the city of Kolkata, was a member of the Kolkata",
+            "Hello this is a very long sentence. I'm sorry. I'm sorry. I'm sorry. I'm sorry. I'm sorry",
+        ]
+
+        self.assertListEqual(output_native, output_flex)
+        self.assertListEqual(output_native, expected_output)
