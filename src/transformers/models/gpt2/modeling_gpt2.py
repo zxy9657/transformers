@@ -597,10 +597,10 @@ class GPT2FlexAttention(GPT2Attention):
         use_cache: Optional[bool] = False,
         output_attentions: Optional[bool] = False,
     ) -> Tuple[Union[torch.Tensor, Tuple[torch.Tensor]], ...]:
-        if output_attentions or head_mask is not None:
+        if head_mask is not None:
             logger.warning_once(
                 "`GPT2FlexAttention` is used but `torch.nn.attention.flex_attention` does not support "
-                "`output_attentions=True` or `head_mask`. Falling back to the manual attention implementation, but "
+                "`head_mask`. Falling back to the manual attention implementation, but "
                 "specifying the manual implementation will be required from Transformers version v5.0.0 onwards. "
                 'This warning can be removed using the argument `attn_implementation="eager"` when loading the model.'
             )
@@ -629,10 +629,8 @@ class GPT2FlexAttention(GPT2Attention):
             query = self.q_attn(hidden_states)
             key, value = self.c_attn(encoder_hidden_states).split(self.split_size, dim=2)
             attention_mask = encoder_attention_mask
-            kv_len = key.size(-2)
         else:
             query, key, value = self.c_attn(hidden_states).split(self.split_size, dim=2)
-            kv_len = key.size(-2)
 
         query = self._split_heads(query, self.num_heads, self.head_dim)
         key = self._split_heads(key, self.num_heads, self.head_dim)
@@ -663,7 +661,14 @@ class GPT2FlexAttention(GPT2Attention):
             return q_idx >= kv_idx
 
         block_mask = (
-            create_block_mask_cached(causal_mask, bsz, self.num_heads, q_len, kv_len, device=query.device,)
+            create_block_mask_cached(
+                causal_mask,
+                bsz,
+                self.num_heads,
+                q_len,
+                key.size(-2),
+                device=query.device,
+            )
             if is_causal
             else None
         )
@@ -672,7 +677,11 @@ class GPT2FlexAttention(GPT2Attention):
             key,
             value,
             block_mask=block_mask,
+            return_lse=output_attentions,
         )
+        if output_attentions:
+            attn_output, attn_weights = attn_output
+            attn_weights_reshaped = attn_weights.reshape(bsz, q_len, self.num_heads * self.head_dim)
 
         # Reshape outputs
         attn_output = attn_output.transpose(1, 2).contiguous()
@@ -682,7 +691,11 @@ class GPT2FlexAttention(GPT2Attention):
         attn_output = self.c_proj(attn_output)
         attn_output = self.resid_dropout(attn_output)
 
-        return attn_output, present, None
+        outputs = (attn_output, present)
+        if output_attentions:
+            outputs += (attn_weights_reshaped,)
+
+        return outputs
 
 
 class GPT2MLP(nn.Module):
