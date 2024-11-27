@@ -16,8 +16,10 @@
 
 import unittest
 
+from parameterized import parameterized
+
 from transformers import EsmConfig, is_torch_available
-from transformers.testing_utils import TestCasePlus, require_torch, slow, torch_device
+from transformers.testing_utils import TestCasePlus, require_torch, require_torch_sdpa, slow, torch_device
 
 from ...test_configuration_common import ConfigTester
 from ...test_modeling_common import ModelTesterMixin, ids_tensor, random_attention_mask
@@ -264,6 +266,12 @@ class EsmFoldModelTest(ModelTesterMixin, PipelineTesterMixin, unittest.TestCase)
 
     @unittest.skip(reason="ESMFold doesn't support data parallel.")
     def test_multi_gpu_data_parallel_forward(self):
+        pass
+
+    @parameterized.expand([("float16",), ("bfloat16",), ("float32",)])
+    @require_torch_sdpa
+    @unittest.skip("ESMFold doesn't support output hidden states in normal way which is required in this test.")
+    def test_eager_matches_sdpa_inference(self):
         pass
 
 
