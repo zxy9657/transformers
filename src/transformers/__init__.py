@@ -191,6 +191,7 @@ _import_structure = {
         "AutoImageProcessor",
         "AutoProcessor",
         "AutoTokenizer",
+        "AutoForCausalLM",
     ],
     "models.autoformer": ["AutoformerConfig"],
     "models.bark": [
@@ -2624,10 +2625,6 @@ else:
     )
     _import_structure["models.llama"].extend(
         [
-            "LlamaForCausalLM",
-            "LlamaForQuestionAnswering",
-            "LlamaForSequenceClassification",
-            "LlamaForTokenClassification",
             "LlamaModel",
             "LlamaPreTrainedModel",
         ]
@@ -5097,6 +5094,7 @@ if TYPE_CHECKING:
         TOKENIZER_MAPPING,
         AutoConfig,
         AutoFeatureExtractor,
+        AutoForCausalLM,
         AutoImageProcessor,
         AutoProcessor,
         AutoTokenizer,
@@ -6488,6 +6486,7 @@ if TYPE_CHECKING:
             AutoModelForZeroShotObjectDetection,
             AutoModelWithLMHead,
         )
+        from .models.auto.modeling_task import AutoForCausalLM
         from .models.autoformer import (
             AutoformerForPrediction,
             AutoformerModel,
@@ -7364,10 +7363,6 @@ if TYPE_CHECKING:
             LiltPreTrainedModel,
         )
         from .models.llama import (
-            LlamaForCausalLM,
-            LlamaForQuestionAnswering,
-            LlamaForSequenceClassification,
-            LlamaForTokenClassification,
             LlamaModel,
             LlamaPreTrainedModel,
         )

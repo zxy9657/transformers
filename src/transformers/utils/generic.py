@@ -26,9 +26,10 @@ from contextlib import ExitStack, contextmanager
 from dataclasses import fields, is_dataclass
 from enum import Enum
 from functools import partial, wraps
-from typing import Any, ContextManager, Dict, Iterable, List, Optional, Tuple, TypedDict
+from typing import Any, ContextManager, Iterable, List, Optional, Tuple, TypedDict, Union, Dict
 
 import numpy as np
+import torch
 from packaging import version
 
 from .import_utils import (
@@ -871,6 +872,54 @@ class LossKwargs(TypedDict, total=False):
     num_items_in_batch: Optional[int]
 
 
+class KwargsForCausalLM(LossKwargs):
+    input_ids: torch.LongTensor = None
+    attention_mask: Optional[torch.Tensor] = None
+    position_ids: Optional[torch.LongTensor] = None
+    past_key_values: Optional[Union["Cache", List[torch.FloatTensor]]] = None
+    inputs_embeds: Optional[torch.FloatTensor] = None
+    labels: Optional[torch.LongTensor] = None
+    use_cache: Optional[bool] = None
+    output_attentions: Optional[bool] = None
+    output_hidden_states: Optional[bool] = None
+    return_dict: Optional[bool] = None
+    cache_position: Optional[torch.LongTensor] = None
+    num_logits_to_keep: int = 0
+
+
+def validate_config_kwargs(func):
+    """
+    A decorator to validate and initialize kwargs based on a config object.
+    """
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        self = args[0]
+        # Default values from the config
+        default_kwargs = {
+            "output_attentions": self.config.output_attentions,
+            "output_hidden_states": self.config.output_hidden_states,
+            "use_cache": self.config.use_cache,
+            "return_dict": self.config.use_return_dict,
+        }
+
+        # Merge provided kwargs with defaults
+        validated_kwargs = {**default_kwargs, **kwargs}
+
+        # # Validate kwargs against TypedDict
+        # for key in validated_kwargs:
+        #     if key not in KwargsForCausalLM.__annotations__:
+        #         raise ValueError(f"Invalid keyword argument: {key}")
+
+        if self.gradient_checkpointing and self.training and default_kwargs["use_cache"]:
+            validated_kwargs["use_cache"] = False
+
+        # Pass the validated kwargs to the function
+        return func(*args, **validated_kwargs)
+
+    return wrapper
+
+  
 def is_timm_config_dict(config_dict: Dict[str, Any]) -> bool:
     """Checks whether a config dict is a timm config dict."""
     return "pretrained_cfg" in config_dict

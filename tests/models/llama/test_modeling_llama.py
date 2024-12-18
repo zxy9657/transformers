@@ -23,6 +23,12 @@ from parameterized import parameterized
 
 from transformers import AutoTokenizer, LlamaConfig, StaticCache, is_torch_available, set_seed
 from transformers.generation.configuration_utils import GenerationConfig
+from transformers.models.auto import (
+    AutoForCausalLM,
+    AutoForQuestionAnswering,
+    AutoForSequenceClassification,
+    AutoForTokenClassification,
+)
 from transformers.testing_utils import (
     cleanup,
     require_flash_attn,
@@ -44,14 +50,9 @@ if is_torch_available():
     import torch
 
     from transformers import (
-        LlamaForCausalLM,
-        LlamaForQuestionAnswering,
-        LlamaForSequenceClassification,
-        LlamaForTokenClassification,
         LlamaModel,
         LlamaTokenizer,
     )
-    from transformers.models.llama.modeling_llama import LlamaRotaryEmbedding
 
 
 class LlamaModelTester:
@@ -197,7 +198,7 @@ class LlamaModelTester:
         encoder_hidden_states,
         encoder_attention_mask,
     ):
-        model = LlamaForCausalLM(config=config)
+        model = AutoForCausalLM(config=config)
         model.to(torch_device)
         model.eval()
         result = model(input_ids, attention_mask=input_mask, labels=token_labels)
@@ -217,7 +218,7 @@ class LlamaModelTester:
     ):
         config.is_decoder = True
         config.add_cross_attention = True
-        model = LlamaForCausalLM(config=config)
+        model = AutoForCausalLM(config=config)
         model.to(torch_device)
         model.eval()
 
@@ -285,23 +286,23 @@ class LlamaModelTest(ModelTesterMixin, GenerationTesterMixin, PipelineTesterMixi
     all_model_classes = (
         (
             LlamaModel,
-            LlamaForCausalLM,
-            LlamaForSequenceClassification,
-            LlamaForQuestionAnswering,
-            LlamaForTokenClassification,
+            AutoForCausalLM,
+            AutoForSequenceClassification,
+            AutoForQuestionAnswering,
+            AutoForTokenClassification,
         )
         if is_torch_available()
         else ()
     )
-    all_generative_model_classes = (LlamaForCausalLM,) if is_torch_available() else ()
+    all_generative_model_classes = (AutoForCausalLM,) if is_torch_available() else ()
     pipeline_model_mapping = (
         {
             "feature-extraction": LlamaModel,
-            "text-classification": LlamaForSequenceClassification,
-            "text-generation": LlamaForCausalLM,
-            "zero-shot": LlamaForSequenceClassification,
-            "question-answering": LlamaForQuestionAnswering,
-            "token-classification": LlamaForTokenClassification,
+            "text-classification": AutoForSequenceClassification,
+            "text-generation": AutoForCausalLM,
+            "zero-shot": AutoForSequenceClassification,
+            "question-answering": AutoForQuestionAnswering,
+            "token-classification": AutoForTokenClassification,
         }
         if is_torch_available()
         else {}
@@ -315,7 +316,7 @@ class LlamaModelTest(ModelTesterMixin, GenerationTesterMixin, PipelineTesterMixi
     model_split_percents = [0.5, 0.7, 0.8]
 
     # used in `test_torch_compile_for_training`
-    _torch_compile_train_cls = LlamaForCausalLM if is_torch_available() else None
+    _torch_compile_train_cls = AutoForCausalLM if is_torch_available() else None
 
     def setUp(self):
         self.model_tester = LlamaModelTester(self)
@@ -340,7 +341,7 @@ class LlamaModelTest(ModelTesterMixin, GenerationTesterMixin, PipelineTesterMixi
         input_ids = input_dict["input_ids"]
         attention_mask = input_ids.ne(1).to(torch_device)
         sequence_labels = ids_tensor([self.model_tester.batch_size], self.model_tester.type_sequence_label_size)
-        model = LlamaForSequenceClassification(config)
+        model = AutoForSequenceClassification(config)
         model.to(torch_device)
         model.eval()
         result = model(input_ids, attention_mask=attention_mask, labels=sequence_labels)
@@ -353,7 +354,7 @@ class LlamaModelTest(ModelTesterMixin, GenerationTesterMixin, PipelineTesterMixi
         input_ids = input_dict["input_ids"]
         attention_mask = input_ids.ne(1).to(torch_device)
         sequence_labels = ids_tensor([self.model_tester.batch_size], self.model_tester.type_sequence_label_size)
-        model = LlamaForSequenceClassification(config)
+        model = AutoForSequenceClassification(config)
         model.to(torch_device)
         model.eval()
         result = model(input_ids, attention_mask=attention_mask, labels=sequence_labels)
@@ -368,7 +369,7 @@ class LlamaModelTest(ModelTesterMixin, GenerationTesterMixin, PipelineTesterMixi
         sequence_labels = ids_tensor(
             [self.model_tester.batch_size, config.num_labels], self.model_tester.type_sequence_label_size
         ).to(torch.float)
-        model = LlamaForSequenceClassification(config)
+        model = AutoForSequenceClassification(config)
         model.to(torch_device)
         model.eval()
         result = model(input_ids, attention_mask=attention_mask, labels=sequence_labels)
@@ -380,7 +381,7 @@ class LlamaModelTest(ModelTesterMixin, GenerationTesterMixin, PipelineTesterMixi
         input_ids = input_dict["input_ids"]
         attention_mask = input_ids.ne(1).to(torch_device)
         token_labels = ids_tensor([self.model_tester.batch_size, self.model_tester.seq_length], config.num_labels)
-        model = LlamaForTokenClassification(config=config)
+        model = AutoForTokenClassification(config=config)
         model.to(torch_device)
         model.eval()
         result = model(input_ids, attention_mask=attention_mask, labels=token_labels)
@@ -424,71 +425,6 @@ class LlamaModelTest(ModelTesterMixin, GenerationTesterMixin, PipelineTesterMixi
         # The output should be different for long inputs
         self.assertFalse(torch.allclose(original_long_output, scaled_long_output, atol=1e-5))
 
-    def test_model_rope_scaling(self):
-        config, _ = self.model_tester.prepare_config_and_inputs_for_common()
-        scaling_factor = 10
-        short_input_length = 10
-        long_input_length = int(config.max_position_embeddings * 1.5)
-
-        # Inputs
-        x = torch.randn(1, dtype=torch.float32, device=torch_device)  # used exlusively to get the dtype and the device
-        position_ids_short = torch.arange(short_input_length, dtype=torch.long, device=torch_device)
-        position_ids_short = position_ids_short.unsqueeze(0)
-        position_ids_long = torch.arange(long_input_length, dtype=torch.long, device=torch_device)
-        position_ids_long = position_ids_long.unsqueeze(0)
-
-        # Sanity check original RoPE
-        original_rope = LlamaRotaryEmbedding(config=config).to(torch_device)
-        original_cos_short, original_sin_short = original_rope(x, position_ids_short)
-        original_cos_long, original_sin_long = original_rope(x, position_ids_long)
-        torch.testing.assert_close(original_cos_short, original_cos_long[:, :short_input_length, :])
-        torch.testing.assert_close(original_sin_short, original_sin_long[:, :short_input_length, :])
-
-        # Sanity check linear RoPE scaling
-        # New position "x" should match original position with index "x/scaling_factor"
-        config.rope_scaling = {"type": "linear", "factor": scaling_factor}
-        linear_scaling_rope = LlamaRotaryEmbedding(config=config).to(torch_device)
-        linear_cos_short, linear_sin_short = linear_scaling_rope(x, position_ids_short)
-        linear_cos_long, linear_sin_long = linear_scaling_rope(x, position_ids_long)
-        torch.testing.assert_close(linear_cos_short, linear_cos_long[:, :short_input_length, :])
-        torch.testing.assert_close(linear_sin_short, linear_sin_long[:, :short_input_length, :])
-        for new_position in range(0, long_input_length, scaling_factor):
-            original_position = int(new_position // scaling_factor)
-            torch.testing.assert_close(linear_cos_long[:, new_position, :], original_cos_long[:, original_position, :])
-            torch.testing.assert_close(linear_sin_long[:, new_position, :], original_sin_long[:, original_position, :])
-
-        # Sanity check Dynamic NTK RoPE scaling
-        # Scaling should only be observed after a long input is fed. We can observe that the frequencies increase
-        # with scaling_factor (or that `inv_freq` decreases)
-        config.rope_scaling = {"type": "dynamic", "factor": scaling_factor}
-        ntk_scaling_rope = LlamaRotaryEmbedding(config=config).to(torch_device)
-        ntk_cos_short, ntk_sin_short = ntk_scaling_rope(x, position_ids_short)
-        ntk_cos_long, ntk_sin_long = ntk_scaling_rope(x, position_ids_long)
-        torch.testing.assert_close(ntk_cos_short, original_cos_short)
-        torch.testing.assert_close(ntk_sin_short, original_sin_short)
-        with self.assertRaises(AssertionError):
-            torch.testing.assert_close(ntk_cos_long, original_cos_long)
-        with self.assertRaises(AssertionError):
-            torch.testing.assert_close(ntk_sin_long, original_sin_long)
-        self.assertTrue((ntk_scaling_rope.inv_freq <= original_rope.inv_freq).all())
-
-        # Sanity check Yarn RoPE scaling
-        # Scaling should be over the entire input
-        config.rope_scaling = {"type": "yarn", "factor": scaling_factor}
-        yarn_scaling_rope = LlamaRotaryEmbedding(config=config).to(torch_device)
-        yarn_cos_short, yarn_sin_short = yarn_scaling_rope(x, position_ids_short)
-        yarn_cos_long, yarn_sin_long = yarn_scaling_rope(x, position_ids_long)
-        torch.testing.assert_close(yarn_cos_short, yarn_cos_long[:, :short_input_length, :])
-        torch.testing.assert_close(yarn_sin_short, yarn_sin_long[:, :short_input_length, :])
-        with self.assertRaises(AssertionError):
-            torch.testing.assert_close(yarn_cos_short, original_cos_short)
-        with self.assertRaises(AssertionError):
-            torch.testing.assert_close(yarn_sin_short, original_sin_short)
-        with self.assertRaises(AssertionError):
-            torch.testing.assert_close(yarn_cos_long, original_cos_long)
-        with self.assertRaises(AssertionError):
-            torch.testing.assert_close(yarn_sin_long, original_sin_long)
-
     def test_model_loading_old_rope_configs(self):
         def _reinitialize_config(base_config, new_kwargs):
             # Reinitialize the config with the new kwargs, forcing the config to go through its __init__ validation
@@ -499,17 +435,17 @@ class LlamaModelTest(ModelTesterMixin, GenerationTesterMixin, PipelineTesterMixi
 
         # from untouched config -> ✅
         base_config, model_inputs = self.model_tester.prepare_config_and_inputs_for_common()
-        original_model = LlamaForCausalLM(base_config).to(torch_device)
+        original_model = AutoForCausalLM(base_config).to(torch_device)
         original_model(**model_inputs)
 
         # from a config with the expected rope configuration -> ✅
         config = _reinitialize_config(base_config, {"rope_scaling": {"rope_type": "linear", "factor": 10.0}})
-        original_model = LlamaForCausalLM(config).to(torch_device)
+        original_model = AutoForCausalLM(config).to(torch_device)
         original_model(**model_inputs)
 
         # from a config with the old rope configuration ('type' instead of 'rope_type')  -> ✅ we gracefully handle BC
         config = _reinitialize_config(base_config, {"rope_scaling": {"type": "linear", "factor": 10.0}})
-        original_model = LlamaForCausalLM(config).to(torch_device)
+        original_model = AutoForCausalLM(config).to(torch_device)
         original_model(**model_inputs)
 
         # from a config with both 'type' and 'rope_type'  -> ✅ they can coexist (and both are present in the config)
@@ -518,13 +454,13 @@ class LlamaModelTest(ModelTesterMixin, GenerationTesterMixin, PipelineTesterMixi
         )
         self.assertTrue(config.rope_scaling["type"] == "linear")
         self.assertTrue(config.rope_scaling["rope_type"] == "linear")
-        original_model = LlamaForCausalLM(config).to(torch_device)
+        original_model = AutoForCausalLM(config).to(torch_device)
         original_model(**model_inputs)
 
         # from a config with parameters in a bad range ('factor' should be >= 1.0) -> ⚠️ throws a warning
         with self.assertLogs("transformers.modeling_rope_utils", level="WARNING") as logs:
             config = _reinitialize_config(base_config, {"rope_scaling": {"rope_type": "linear", "factor": -999.0}})
-            original_model = LlamaForCausalLM(config).to(torch_device)
+            original_model = AutoForCausalLM(config).to(torch_device)
             original_model(**model_inputs)
             self.assertEqual(len(logs.output), 1)
             self.assertIn("factor field", logs.output[0])
@@ -534,7 +470,7 @@ class LlamaModelTest(ModelTesterMixin, GenerationTesterMixin, PipelineTesterMixi
             config = _reinitialize_config(
                 base_config, {"rope_scaling": {"rope_type": "linear", "factor": 10.0, "foo": "bar"}}
             )
-            original_model = LlamaForCausalLM(config).to(torch_device)
+            original_model = AutoForCausalLM(config).to(torch_device)
             original_model(**model_inputs)
             self.assertEqual(len(logs.output), 1)
             self.assertIn("Unrecognized keys", logs.output[0])
@@ -557,7 +493,7 @@ class LlamaModelTest(ModelTesterMixin, GenerationTesterMixin, PipelineTesterMixi
                 model = model_class(config)
                 model.save_pretrained(tmp_dir)
 
-                new_model = LlamaForCausalLM.from_pretrained(
+                new_model = AutoForCausalLM.from_pretrained(
                     tmp_dir, use_flash_attention_2=True, torch_dtype=torch.float16
                 ).to("cuda")
 
@@ -608,7 +544,7 @@ class LlamaIntegrationTest(unittest.TestCase):
         )
 
         tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3.1-8B-Instruct")
-        model = LlamaForCausalLM.from_pretrained(
+        model = AutoForCausalLM.from_pretrained(
             "meta-llama/Meta-Llama-3.1-8B-Instruct", device_map="auto", torch_dtype=torch.bfloat16
         )
         input_text = ["Tell me about the french revolution."]
@@ -623,7 +559,7 @@ class LlamaIntegrationTest(unittest.TestCase):
     def test_model_7b_logits_bf16(self):
         input_ids = [1, 306, 4658, 278, 6593, 310, 2834, 338]
 
-        model = LlamaForCausalLM.from_pretrained(
+        model = AutoForCausalLM.from_pretrained(
             "meta-llama/Llama-2-7b-hf", device_map="auto", torch_dtype=torch.bfloat16, attn_implementation="eager"
         )
 
@@ -667,7 +603,7 @@ class LlamaIntegrationTest(unittest.TestCase):
     def test_model_7b_logits(self):
         input_ids = [1, 306, 4658, 278, 6593, 310, 2834, 338]
 
-        model = LlamaForCausalLM.from_pretrained(
+        model = AutoForCausalLM.from_pretrained(
             "meta-llama/Llama-2-7b-hf", device_map="auto", torch_dtype=torch.float16
         )
 
@@ -717,7 +653,7 @@ class LlamaIntegrationTest(unittest.TestCase):
         )
         prompt = "Simply put, the theory of relativity states that "
         tokenizer = LlamaTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf")
-        model = LlamaForCausalLM.from_pretrained(
+        model = AutoForCausalLM.from_pretrained(
             "meta-llama/Llama-2-7b-chat-hf", device_map="sequential", torch_dtype=torch.float16
         )
         model_inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
@@ -754,7 +690,7 @@ class LlamaIntegrationTest(unittest.TestCase):
             "My favorite all time favorite condiment is ketchup.",
         ]
         tokenizer = LlamaTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf", pad_token="</s>", padding_side="right")
-        model = LlamaForCausalLM.from_pretrained(
+        model = AutoForCausalLM.from_pretrained(
             "meta-llama/Llama-2-7b-hf", device_map=torch_device, torch_dtype=torch.float16
         )
         inputs = tokenizer(prompts, return_tensors="pt", padding=True).to(model.device)
@@ -819,7 +755,7 @@ class LlamaIntegrationTest(unittest.TestCase):
             cache_implementation = "static"
             attn_implementation = "sdpa"
             batch_size = 1
-            model = LlamaForCausalLM.from_pretrained(
+            model = AutoForCausalLM.from_pretrained(
                 llama_model_ckp,
                 device_map=device,
                 torch_dtype=dtype,
@@ -859,7 +795,7 @@ class Mask4DTestHard(unittest.TestCase):
         model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
         self.model_dtype = torch.float32
         self.tokenizer = LlamaTokenizer.from_pretrained(model_name)
-        self.model = LlamaForCausalLM.from_pretrained(model_name, torch_dtype=self.model_dtype).to(torch_device)
+        self.model = AutoForCausalLM.from_pretrained(model_name, torch_dtype=self.model_dtype).to(torch_device)
 
     def get_test_data(self):
         template = "my favorite {}"

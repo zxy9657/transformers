@@ -39,6 +39,7 @@ CONFIG_MAPPING_NAMES = OrderedDict(
         ("aria_text", "AriaTextConfig"),
         ("audio-spectrogram-transformer", "ASTConfig"),
         ("autoformer", "AutoformerConfig"),
+        ("auto", "PretrainedConfig"),
         ("bark", "BarkConfig"),
         ("bart", "BartConfig"),
         ("beit", "BeitConfig"),
@@ -337,6 +338,7 @@ MODEL_NAMES_MAPPING = OrderedDict(
         ("aria_text", "AriaText"),
         ("audio-spectrogram-transformer", "Audio Spectrogram Transformer"),
         ("autoformer", "Autoformer"),
+        ("auto", "Auto"),
         ("bark", "Bark"),
         ("bart", "BART"),
         ("barthez", "BARThez"),
@@ -916,6 +918,8 @@ class AutoConfig:
 
     This class cannot be instantiated directly using `__init__()` (throws an error).
     """
+
+    model_type = "auto"
 
     def __init__(self):
         raise EnvironmentError(
