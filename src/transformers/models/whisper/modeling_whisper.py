@@ -378,8 +378,11 @@ class WhisperFlashAttention2(WhisperAttention):
                 "Use `attn_implementation='sdpa'` in the meantime, and open an issue at https://github.com/huggingface/transformers"
             )
         # WhisperFlashAttention2 attention does not support output_attentions
-        if output_attentions:
-            raise ValueError("WhisperFlashAttention2 attention does not support output_attentions")
+        if output_attentions or layer_head_mask is not None:
+            raise ValueError(
+                "WhisperFlashAttention2 attention does not support `output_attentions=True` or `layer_head_mask is not None`. "
+                "Use the argument `attn_implementation='eager'` when loading the model."
+            )
 
         # if key_value_states are provided this layer is used as a cross-attention layer
         # for the decoder

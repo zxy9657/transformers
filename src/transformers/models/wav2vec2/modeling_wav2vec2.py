@@ -679,8 +679,11 @@ class Wav2Vec2FlashAttention2(Wav2Vec2Attention):
         output_attentions: bool = False,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         # Wav2Vec2FlashAttention2 attention does not support output_attentions
-        if output_attentions:
-            raise ValueError("Wav2Vec2FlashAttention2 attention does not support output_attentions")
+        if output_attentions or layer_head_mask is not None:
+            raise ValueError(
+                "Wav2Vec2FlashAttention2 attention does not support `output_attentions=True` or `layer_head_mask is not None`. "
+                "Use the argument `attn_implementation='eager'` when loading the model."
+            )
 
         # if key_value_states are provided this layer is used as a cross-attention layer
         # for the decoder
