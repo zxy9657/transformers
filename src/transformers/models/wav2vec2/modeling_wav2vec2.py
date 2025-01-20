@@ -789,7 +789,13 @@ class Wav2Vec2SdpaAttention(Wav2Vec2Attention):
         output_attentions: bool = False,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         """Input shape: Batch x Time x Channel"""
-        if output_attentions or layer_head_mask is not None:
+        if layer_head_mask is not None:
+            raise ValueError(
+                "Wav2Vec2SdpaAttention attention does not support `layer_head_mask`. "
+                "Use the argument `attn_implementation='eager'` when loading the model."
+            )
+
+        if output_attentions:
             # TODO: Improve this warning with e.g. `model.config._attn_implementation = "manual"` once this is implemented.
             logger.warning_once(
                 "Wav2Vec2Model is using Wav2Vec2SdpaAttention, but `torch.nn.functional.scaled_dot_product_attention` does not support `output_attentions=True` or `layer_head_mask` not None. Falling back to the manual attention"
