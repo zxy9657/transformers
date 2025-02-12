@@ -93,6 +93,7 @@ if TYPE_CHECKING:
     from .dit import *
     from .donut import *
     from .dpr import *
+    from .efficientloftr import *
     from .dpt import *
     from .efficientnet import *
     from .electra import *
