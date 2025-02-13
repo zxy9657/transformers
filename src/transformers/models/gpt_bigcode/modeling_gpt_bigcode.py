@@ -300,12 +300,6 @@ class GPTBigCodeFlashAttention2(GPTBigCodeAttention):
         Tuple[torch.Tensor, Optional[torch.Tensor]],
         Tuple[torch.Tensor, Optional[torch.Tensor], Tuple[torch.Tensor, ...]],
     ]:
-        if output_attentions or head_mask is not None:
-            raise ValueError(
-                "GPTBigCodeFlashAttention2 attention does not support `output_attentions=True` or `head_mask is not None`. "
-                "Use the argument `attn_implementation='eager'` when loading the model."
-            )
-
         if encoder_hidden_states is not None:
             if not hasattr(self, "q_attn") or not self.is_cross_attention:
                 raise ValueError(
@@ -403,13 +397,7 @@ class GPTBigCodeFlashAttention2(GPTBigCodeAttention):
 
 
 class GPTBigCodeSdpaAttention(GPTBigCodeAttention):
-    def _attn(self, query, key, value, attention_mask=None, head_mask=None):
-        if head_mask is not None:
-            # The super dispatch is done in the forward.
-            raise ValueError(
-                "PyTorch SDPA does not support head_mask. Please open an issue in Transformers repository."
-            )
-
+    def _attn(self, query, key, value, attention_mask=None):
         scale = None
         if not self.scale_attn_weights:
             scale = 1
@@ -490,12 +478,6 @@ class GPTBigCodeSdpaAttention(GPTBigCodeAttention):
         Tuple[torch.Tensor, Optional[torch.Tensor]],
         Tuple[torch.Tensor, Optional[torch.Tensor], Tuple[torch.Tensor, ...]],
     ]:
-        if head_mask is not None:
-            raise ValueError(
-                "GPTBigCodeSdpaAttention attention does not support `head_mask`. "
-                "Use the argument `attn_implementation='eager'` when loading the model."
-            )
-
         if encoder_hidden_states is not None:
             if not hasattr(self, "q_attn") or not self.is_cross_attention:
                 raise ValueError(
@@ -528,7 +510,7 @@ class GPTBigCodeSdpaAttention(GPTBigCodeAttention):
         if not output_attentions:
             # Difference with the original implementation: there is no need to transpose the key here,
             # as SDPA expects seq_length to be at index -2 for the key as well
-            attn_output, attn_weights = self._attn(query, key, value, attention_mask, head_mask)
+            attn_output, attn_weights = self._attn(query, key, value, attention_mask)
         else:
             # TODO: Improve this warning with e.g. `model.config._attn_implementation = "manual"` once this is implemented.
             logger.warning_once(

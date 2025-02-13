@@ -247,12 +247,6 @@ class OptFlashAttention2(OPTAttention):
         position_ids: Optional[torch.Tensor] = None,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         """Input shape: Batch x Time x Channel"""
-        if output_attentions or layer_head_mask is not None:
-            raise ValueError(
-                "OptFlashAttention2 attention does not support `output_attentions=True` or `layer_head_mask is not None`. "
-                "Use the argument `attn_implementation='eager'` when loading the model."
-            )
-
         bsz, _, _ = hidden_states.size()
 
         # get query proj
@@ -338,12 +332,6 @@ class OPTSdpaAttention(OPTAttention):
         output_attentions: bool = False,
         position_ids: Optional[torch.Tensor] = None,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
-        if layer_head_mask is not None:
-            raise ValueError(
-                "OPTSdpaAttention attention does not support `layer_head_mask`. "
-                "Use the argument `attn_implementation='eager'` when loading the model."
-            )
-
         if output_attentions:
             logger.warning_once(
                 "OPTModel is using SDPA attention, which currently does not support output_attentions=True."
@@ -353,7 +341,6 @@ class OPTSdpaAttention(OPTAttention):
             return super().forward(
                 hidden_states=hidden_states,
                 attention_mask=attention_mask,
-                layer_head_mask=layer_head_mask,
                 past_key_value=past_key_value,
                 output_attentions=output_attentions,
             )  # TODO after merge add position_ids=position_ids

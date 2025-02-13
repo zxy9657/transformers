@@ -344,13 +344,6 @@ class MusicgenFlashAttention2(MusicgenAttention):
         layer_head_mask: Optional[torch.Tensor] = None,
         output_attentions: bool = False,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
-        # MusicgenFlashAttention2 attention does not support output_attentions
-        if output_attentions or layer_head_mask is not None:
-            raise ValueError(
-                "MusicgenFlashAttention2 attention does not support `output_attentions=True` or `layer_head_mask is not None`. "
-                "Use the argument `attn_implementation='eager'` when loading the model."
-            )
-
         # if key_value_states are provided this layer is used as a cross-attention layer
         # for the decoder
         is_cross_attention = key_value_states is not None
@@ -453,15 +446,9 @@ class MusicgenSdpaAttention(MusicgenAttention):
         key_value_states: Optional[torch.Tensor] = None,
         past_key_value: Optional[Tuple[torch.Tensor]] = None,
         attention_mask: Optional[torch.Tensor] = None,
-        layer_head_mask: Optional[torch.Tensor] = None,
         output_attentions: bool = False,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         """Input shape: Batch x Time x Channel"""
-        if layer_head_mask is not None:
-            raise ValueError(
-                "MusicgenSdpaAttention attention does not support `layer_head_mask`. "
-                "Use the argument `attn_implementation='eager'` when loading the model."
-            )
 
         if output_attentions:
             # TODO: Improve this warning with e.g. `model.config._attn_implementation = "manual"` once this is implemented.
@@ -474,7 +461,6 @@ class MusicgenSdpaAttention(MusicgenAttention):
                 key_value_states=key_value_states,
                 past_key_value=past_key_value,
                 attention_mask=attention_mask,
-                layer_head_mask=layer_head_mask,
                 output_attentions=output_attentions,
             )
 
@@ -491,7 +477,6 @@ class MusicgenSdpaAttention(MusicgenAttention):
                 key_value_states=key_value_states,
                 past_key_value=past_key_value,
                 attention_mask=attention_mask,
-                layer_head_mask=layer_head_mask,
                 output_attentions=output_attentions,
             )
 

@@ -378,12 +378,6 @@ class AlbertSdpaAttention(AlbertAttention):
         head_mask: Optional[torch.FloatTensor] = None,
         output_attentions: bool = False,
     ) -> Union[Tuple[torch.Tensor], Tuple[torch.Tensor, torch.Tensor]]:
-        if head_mask is not None:
-            raise ValueError(
-                "AlbertSdpaAttention attention does not support `head_mask`. "
-                "Use the argument `attn_implementation='eager'` when loading the model."
-            )
-
         if self.position_embedding_type != "absolute" or output_attentions:
             logger.warning(
                 "AlbertSdpaAttention is used but `torch.nn.functional.scaled_dot_product_attention` does not support "
@@ -392,7 +386,7 @@ class AlbertSdpaAttention(AlbertAttention):
                 "Transformers version v5.0.0 onwards. This warning can be removed using the argument "
                 '`attn_implementation="eager"` when loading the model.'
             )
-            return super().forward(hidden_states, attention_mask, head_mask, output_attentions)
+            return super().forward(hidden_states, attention_mask, output_attentions)
 
         batch_size, seq_len, _ = hidden_states.size()
         query_layer = self.transpose_for_scores(self.query(hidden_states))
