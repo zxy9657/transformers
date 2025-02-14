@@ -362,6 +362,7 @@ class AlbertAttention(nn.Module):
         projected_context_layer = self.dense(context_layer)
         projected_context_layer_dropout = self.output_dropout(projected_context_layer)
         layernormed_context_layer = self.LayerNorm(hidden_states + projected_context_layer_dropout)
+        print(output_attentions)
         return (layernormed_context_layer, attention_probs) if output_attentions else (layernormed_context_layer,)
 
 
@@ -386,7 +387,7 @@ class AlbertSdpaAttention(AlbertAttention):
                 "Transformers version v5.0.0 onwards. This warning can be removed using the argument "
                 '`attn_implementation="eager"` when loading the model.'
             )
-            return super().forward(hidden_states, attention_mask, output_attentions)
+            return super().forward(hidden_states, attention_mask, output_attentions=output_attentions)
 
         batch_size, seq_len, _ = hidden_states.size()
         query_layer = self.transpose_for_scores(self.query(hidden_states))
