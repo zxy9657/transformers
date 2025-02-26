@@ -194,7 +194,7 @@ class Seq2SeqTrainer(Trainer):
         # We don't want to drop samples in general
         self.gather_function = self.accelerator.gather
         self._gen_kwargs = gen_kwargs
-        return super().evaluate(eval_dataset, ignore_keys=ignore_keys, metric_key_prefix=metric_key_prefix)
+        return super().evaluate(eval_dataset, ignore_keys=ignore_keys, metric_key_prefix=metric_key_prefix, **gen_kwargs)
 
     def predict(
         self,
