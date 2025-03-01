@@ -113,7 +113,6 @@ _grokadamw_available = _is_package_available("grokadamw")
 _schedulefree_available, _schedulefree_version = _is_package_available("schedulefree", return_version=True)
 # `importlib.metadata.version` doesn't work with `bs4` but `beautifulsoup4`. For `importlib.util.find_spec`, reversed.
 _bs4_available = importlib.util.find_spec("bs4") is not None
-_coloredlogs_available = _is_package_available("coloredlogs")
 # `importlib.metadata.util` doesn't work with `opencv-python-headless`.
 _cv2_available = importlib.util.find_spec("cv2") is not None
 _yt_dlp_available = importlib.util.find_spec("yt_dlp") is not None
@@ -142,8 +141,6 @@ _levenshtein_available = _is_package_available("Levenshtein")
 _librosa_available = _is_package_available("librosa")
 _natten_available = _is_package_available("natten")
 _nltk_available = _is_package_available("nltk")
-_onnx_available = _is_package_available("onnx")
-_openai_available = _is_package_available("openai")
 _optimum_available = _is_package_available("optimum")
 _auto_gptq_available = _is_package_available("auto_gptq")
 _gptqmodel_available = _is_package_available("gptqmodel")
@@ -618,20 +615,8 @@ def is_tf_available():
     return _tf_available
 
 
-def is_coloredlogs_available():
-    return _coloredlogs_available
-
-
 def is_tf2onnx_available():
     return _tf2onnx_available
-
-
-def is_onnx_available():
-    return _onnx_available
-
-
-def is_openai_available():
-    return _openai_available
 
 
 def is_flax_available():
@@ -651,31 +636,6 @@ def is_ftfy_available():
 
 def is_g2p_en_available():
     return _g2p_en_available
-
-
-@lru_cache()
-def is_torch_tpu_available(check_device=True):
-    "Checks if `torch_xla` is installed and potentially if a TPU is in the environment"
-    warnings.warn(
-        "`is_torch_tpu_available` is deprecated and will be removed in 4.41.0. "
-        "Please use the `is_torch_xla_available` instead.",
-        FutureWarning,
-    )
-
-    if not _torch_available:
-        return False
-    if importlib.util.find_spec("torch_xla") is not None:
-        if check_device:
-            # We need to check if `xla_device` can be found, will raise a RuntimeError if not
-            try:
-                import torch_xla.core.xla_model as xm
-
-                _ = xm.xla_device()
-                return True
-            except RuntimeError:
-                return False
-        return True
-    return False
 
 
 @lru_cache
@@ -773,24 +733,6 @@ def is_torch_musa_available(check_device=False):
     return hasattr(torch, "musa") and torch.musa.is_available()
 
 
-def is_torchdynamo_available():
-    if not is_torch_available():
-        return False
-
-    return version.parse(_torch_version) >= version.parse("2.0.0")
-
-
-def is_torch_compile_available():
-    if not is_torch_available():
-        return False
-
-    import torch
-
-    # We don't do any version check here to support nighlies marked as 1.14. Ultimately needs to check version against
-    # 2.0 but let's do it later.
-    return hasattr(torch, "compile")
-
-
 def is_torchdynamo_compiling():
     if not is_torch_available():
         return False
@@ -833,6 +775,7 @@ def is_psutil_available():
 
 
 def is_py3nvml_available():
+    logger.warning_once("`is_py3nvml_available` is deprecated and will be removed in v4.51.")
     return _py3nvml_available
 
 
@@ -974,6 +917,7 @@ def is_flash_attn_2_available():
         return False
 
 
+# TODO: replace by `is_flash_attn_greater_or_equal`
 @lru_cache()
 def is_flash_attn_greater_or_equal_2_10():
     if not _is_package_available("flash_attn"):
@@ -1253,10 +1197,6 @@ def is_sudachi_available():
     return _sudachipy_available
 
 
-def get_sudachi_version():
-    return _sudachipy_version
-
-
 def is_sudachi_projection_available():
     if not is_sudachi_available():
         return False
@@ -1502,12 +1442,14 @@ G2P_EN_IMPORT_ERROR = """
 `pip install g2p-en`. Please note that you may need to restart your runtime after installation.
 """
 
+
 # docstyle-ignore
 PYTORCH_QUANTIZATION_IMPORT_ERROR = """
 {0} requires the pytorch-quantization library but it was not found in your environment. You can install it with pip:
 `pip install pytorch-quantization --extra-index-url https://pypi.ngc.nvidia.com`
 Please note that you may need to restart your runtime after installation.
 """
+
 
 # docstyle-ignore
 TENSORFLOW_PROBABILITY_IMPORT_ERROR = """
@@ -1647,11 +1589,11 @@ PRETTY_MIDI_IMPORT_ERROR = """
 Please note that you may need to restart your runtime after installation.
 """
 
-
 CYTHON_IMPORT_ERROR = """
 {0} requires the Cython library but it was not found in your environment. You can install it with pip: `pip install
 Cython`. Please note that you may need to restart your runtime after installation.
 """
+
 
 JIEBA_IMPORT_ERROR = """
 {0} requires the jieba library but it was not found in your environment. You can install it with pip: `pip install

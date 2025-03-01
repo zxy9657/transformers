@@ -95,7 +95,6 @@ from transformers.testing_utils import (
     require_torch_tensorrt_fx,
     require_torch_tf32,
     require_torch_up_to_2_accelerators,
-    require_torchdynamo,
     require_vision,
     require_wandb,
     run_test_using_subprocess,
@@ -3961,10 +3960,9 @@ class TrainerIntegrationTest(TestCasePlus, TrainerIntegrationCommon):
 
     @require_non_xpu
     @require_torch_non_multi_gpu
-    @require_torchdynamo
     @require_torch_tensorrt_fx
     def test_torchdynamo_full_eval(self):
-        import torchdynamo
+        import torch._dynamo as torchdynamo
 
         # torchdynamo at the moment doesn't support DP/DDP, therefore require a single gpu
         n_gpus = get_gpu_count()
@@ -3990,90 +3988,11 @@ class TrainerIntegrationTest(TestCasePlus, TrainerIntegrationCommon):
             del trainer
             torchdynamo.reset()
 
-            # 3. TorchDynamo nvfuser
-            trainer = get_regression_trainer(a=a, b=b, eval_len=eval_len, torchdynamo="nvfuser", output_dir=tmp_dir)
-            metrics = trainer.evaluate()
-            self.assertAlmostEqual(metrics["eval_loss"], original_eval_loss)
-            torchdynamo.reset()
-
-            # 4. TorchDynamo fx2trt
+            # 3. TorchDynamo fx2trt
             trainer = get_regression_trainer(a=a, b=b, eval_len=eval_len, torchdynamo="fx2trt", output_dir=tmp_dir)
             metrics = trainer.evaluate()
             self.assertAlmostEqual(metrics["eval_loss"], original_eval_loss)
             torchdynamo.reset()
-
-    @unittest.skip(reason="torch 2.0.0 gives `ModuleNotFoundError: No module named 'torchdynamo'`.")
-    @require_torch_non_multi_gpu
-    @require_torchdynamo
-    def test_torchdynamo_memory(self):
-        # torchdynamo at the moment doesn't support DP/DDP, therefore require a single gpu
-        import torchdynamo
-
-        class CustomTrainer(Trainer):
-            def compute_loss(self, model, inputs, return_outputs=False):
-                x = inputs["x"]
-                output = model(x)
-                if self.args.n_gpu == 1:
-                    return output.mean()
-                return output
-
-        class MyModule(torch.nn.Module):
-            """Simple module that does aggressive fusion"""
-
-            def __init__(self):
-                super().__init__()
-
-            def forward(self, x):
-                for _ in range(20):
-                    x = torch.cos(x)
-                return x
-
-        mod = MyModule()
-
-        # 1. without TorchDynamo (eager baseline)
-        a = torch.ones(1024, 1024, device="cuda", requires_grad=True)
-        a.grad = None
-        trainer = CustomTrainer(model=mod)
-        # warmup
-        for _ in range(10):
-            orig_loss = trainer.training_step(mod, {"x": a})
-
-        # resets
-        gc.collect()
-        torch.cuda.empty_cache()
-        torch.cuda.reset_peak_memory_stats()
-
-        orig_loss = trainer.training_step(mod, {"x": a})
-        orig_peak_mem = torch.cuda.max_memory_allocated()
-        torchdynamo.reset()
-        del trainer
-
-        # 2. TorchDynamo nvfuser
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            a = torch.ones(1024, 1024, device="cuda", requires_grad=True)
-            a.grad = None
-            args = TrainingArguments(output_dir=tmp_dir, torchdynamo="nvfuser")
-            trainer = CustomTrainer(model=mod, args=args)
-            # warmup
-            for _ in range(10):
-                loss = trainer.training_step(mod, {"x": a})
-
-            # resets
-            gc.collect()
-            torch.cuda.empty_cache()
-            torch.cuda.reset_peak_memory_stats()
-
-            loss = trainer.training_step(mod, {"x": a})
-            peak_mem = torch.cuda.max_memory_allocated()
-            torchdynamo.reset()
-            del trainer
-
-            # Functional check
-            self.assertAlmostEqual(loss, orig_loss)
-
-            # AOT Autograd recomputaion and nvfuser recomputation optimization
-            # aggressively fuses the operations and reduce the memory footprint.
-            self.assertGreater(orig_peak_mem, peak_mem * 2)
 
     @require_torch_accelerator
     @require_torch_bf16

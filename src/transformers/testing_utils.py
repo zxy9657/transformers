@@ -51,7 +51,6 @@ from packaging import version
 from transformers import logging as transformers_logging
 
 from .integrations import (
-    is_clearml_available,
     is_optuna_available,
     is_ray_available,
     is_sigopt_available,
@@ -73,8 +72,6 @@ from .utils import (
     is_bitsandbytes_multi_backend_available,
     is_bs4_available,
     is_compressed_tensors_available,
-    is_cv2_available,
-    is_cython_available,
     is_detectron2_available,
     is_eetq_available,
     is_essentia_available,
@@ -103,7 +100,6 @@ from .utils import (
     is_lomo_available,
     is_natten_available,
     is_nltk_available,
-    is_onnx_available,
     is_optimum_available,
     is_optimum_quanto_available,
     is_pandas_available,
@@ -113,7 +109,6 @@ from .utils import (
     is_pyctcdecode_available,
     is_pytesseract_available,
     is_pytest_available,
-    is_pytorch_quantization_available,
     is_rjieba_available,
     is_sacremoses_available,
     is_safetensors_available,
@@ -149,7 +144,6 @@ from .utils import (
     is_torch_xpu_available,
     is_torchao_available,
     is_torchaudio_available,
-    is_torchdynamo_available,
     is_torchvision_available,
     is_vision_available,
     is_vptq_available,
@@ -217,19 +211,6 @@ def parse_flag_from_env(key, default=False):
         except ValueError:
             # More values are supported, but let's keep the message simple.
             raise ValueError(f"If set, {key} must be yes or no.")
-    return _value
-
-
-def parse_int_from_env(key, default=None):
-    try:
-        value = os.environ[key]
-    except KeyError:
-        _value = default
-    else:
-        try:
-            _value = int(value)
-        except ValueError:
-            raise ValueError(f"If set, {key} must be a int.")
     return _value
 
 
@@ -389,16 +370,6 @@ def require_schedulefree(test_case):
     return unittest.skipUnless(is_schedulefree_available(), "test requires schedulefree")(test_case)
 
 
-def require_cv2(test_case):
-    """
-    Decorator marking a test that requires OpenCV.
-
-    These tests are skipped when OpenCV isn't installed.
-
-    """
-    return unittest.skipUnless(is_cv2_available(), "test requires OpenCV")(test_case)
-
-
 def require_levenshtein(test_case):
     """
     Decorator marking a test that requires Levenshtein.
@@ -483,10 +454,6 @@ def require_jinja(test_case):
 
 def require_tf2onnx(test_case):
     return unittest.skipUnless(is_tf2onnx_available(), "test requires tf2onnx")(test_case)
-
-
-def require_onnx(test_case):
-    return unittest.skipUnless(is_onnx_available(), "test requires ONNX")(test_case)
 
 
 def require_timm(test_case):
@@ -714,16 +681,6 @@ def require_pytesseract(test_case):
     return unittest.skipUnless(is_pytesseract_available(), "test requires PyTesseract")(test_case)
 
 
-def require_pytorch_quantization(test_case):
-    """
-    Decorator marking a test that requires PyTorch Quantization Toolkit. These tests are skipped when PyTorch
-    Quantization Toolkit isn't installed.
-    """
-    return unittest.skipUnless(is_pytorch_quantization_available(), "test requires PyTorch Quantization Toolkit")(
-        test_case
-    )
-
-
 def require_vision(test_case):
     """
     Decorator marking a test that requires the vision dependencies. These tests are skipped when torchaudio isn't
@@ -857,17 +814,6 @@ def require_torch_multi_npu(test_case):
     return unittest.skipUnless(torch.npu.device_count() > 1, "test requires multiple NPUs")(test_case)
 
 
-def require_torch_xpu(test_case):
-    """
-    Decorator marking a test that requires XPU (in PyTorch).
-
-    These tests are skipped when XPU backend is not available. XPU backend might be available either via stock
-    PyTorch (>=2.4) or via Intel Extension for PyTorch. In the latter case, if IPEX is installed, its version
-    must match match current PyTorch version.
-    """
-    return unittest.skipUnless(is_torch_xpu_available(), "test requires XPU device")(test_case)
-
-
 def require_non_xpu(test_case):
     """
     Decorator marking a test that should be skipped for XPU.
@@ -944,16 +890,6 @@ if is_flax_available():
     jax_device = jax.default_backend()
 else:
     jax_device = None
-
-
-def require_torchdynamo(test_case):
-    """Decorator marking a test that requires TorchDynamo"""
-    return unittest.skipUnless(is_torchdynamo_available(), "test requires TorchDynamo")(test_case)
-
-
-def require_torchao(test_case):
-    """Decorator marking a test that requires torchao"""
-    return unittest.skipUnless(is_torchao_available(), "test requires torchao")(test_case)
 
 
 def require_torchao_version_greater_or_equal(torchao_version):
@@ -1106,16 +1042,6 @@ def require_wandb(test_case):
 
     """
     return unittest.skipUnless(is_wandb_available(), "test requires wandb")(test_case)
-
-
-def require_clearml(test_case):
-    """
-    Decorator marking a test requires clearml.
-
-    These tests are skipped when clearml isn't installed.
-
-    """
-    return unittest.skipUnless(is_clearml_available(), "test requires clearml")(test_case)
 
 
 def require_soundfile(test_case):
@@ -1345,13 +1271,6 @@ def require_jumanpp(test_case):
     return unittest.skipUnless(is_jumanpp_available(), "test requires jumanpp")(test_case)
 
 
-def require_cython(test_case):
-    """
-    Decorator marking a test that requires jumanpp
-    """
-    return unittest.skipUnless(is_cython_available(), "test requires cython")(test_case)
-
-
 def require_tiktoken(test_case):
     """
     Decorator marking a test that requires TikToken. These tests are skipped when TikToken isn't installed.
@@ -1419,12 +1338,6 @@ def get_tests_dir(append_path=None):
 # it can handle a single string or a multiline buffer
 def apply_print_resets(buf):
     return re.sub(r"^.*\r", "", buf, 0, re.M)
-
-
-def assert_screenout(out, what):
-    out_pr = apply_print_resets(out).lower()
-    match_str = out_pr.find(what.lower())
-    assert match_str != -1, f"expecting to find {what} in output: f{out_pr}"
 
 
 def set_model_tester_for_less_flaky_test(test_case):
