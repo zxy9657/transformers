@@ -24,7 +24,6 @@ if __name__ == "__main__":
     stat_idx, end_idx = n_tests_per_split * split_idx, n_tests_per_split * (split_idx + 1)
     split_tests = tests[stat_idx:end_idx]
 
-    breakpoint()
     split_tests = "\n".join(split_tests)
 
     with open("splitted_tests.txt", "w") as fp:
