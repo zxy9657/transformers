@@ -1180,6 +1180,9 @@ def create_test_list_from_filter(full_test_list, out_path):
             files_to_test = list(re.findall(_filter, all_test_files))
         print(job_name, file_name)
         if len(files_to_test) > 0:  # No tests -> no file with test list
+            import random
+            for _ in range(64):
+                random.shuffle(files_to_test)
             with open(file_name, "w") as f:
                 f.write("\n".join(files_to_test))
 
