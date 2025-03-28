@@ -14,11 +14,10 @@ if __name__ == "__main__":
     with open(args.target) as fp:
         tests = fp.read().split('\n')
 
-    # split_idx = int(os.environ["CIRCLE_NODE_INDEX"])
-    # n_splits = int(os.environ["CIRCLE_NODE_TOTAL"])
+    split_idx = int(os.environ["CIRCLE_NODE_INDEX"])
+    n_splits = int(os.environ["CIRCLE_NODE_TOTAL"])
 
-    split_idx = 0
-    n_splits = 8
+
 
     n_tests_per_split = len(tests) // int(n_splits)
     stat_idx, end_idx = n_tests_per_split * split_idx, n_tests_per_split * (split_idx + 1)
