@@ -1185,6 +1185,7 @@ def create_test_list_from_filter(full_test_list, out_path):
     # But we want to have the list of complete tests under `tests`
     with open("all_tests.txt") as fp:
         data = fp.read().split("\n")
+        print(data)
 
     # we want to have a map from files to tests
     file_to_test_map = {}
