@@ -42,6 +42,7 @@ jobs:
             - run: uv pip install -U -e .
             - run: echo 'export "GIT_COMMIT_MESSAGE=$(git show -s --format=%s)"' >> "$BASH_ENV" && source "$BASH_ENV"
             - run: mkdir -p test_preparation
+            - run: uv pip install torch
             - run: python utils/tests_fetcher.py | tee tests_fetched_summary.txt
             - run: python utils/tests_fetcher.py --filter_tests
             - run: export "GIT_COMMIT_MESSAGE=$(git show -s --format=%s)" && echo $GIT_COMMIT_MESSAGE && python .circleci/create_circleci_config.py --fetcher_folder test_preparation
@@ -50,6 +51,8 @@ jobs:
                     echo "No tests to run, exiting early!"
                     circleci-agent step halt
                 fi
+
+            - run: ls -l test_preparation
 
             - store_artifacts:
                 path: test_preparation
@@ -75,12 +78,12 @@ jobs:
             # https://circleci.com/docs/api/v2/index.html#operation/getJobArtifacts : to get the job artifacts
             # We could not pass a nested dict, which is why we create the test_file_... parameters for every single job
 
-            - store_artifacts:
-                path: |
-                    test_preparation/pipelines_torch_test_list_detailed.txt
-                    test_preparation/tests_generate_test_list_detailed.txt
-                    test_preparation/tests_tokenization_test_list_detailed.txt
-                    test_preparation/tests_torch_test_list_detailed.txt
+#            - store_artifacts:
+#                path: |
+#                    test_preparation/pipelines_torch_test_list_detailed.txt
+#                    test_preparation/tests_generate_test_list_detailed.txt
+#                    test_preparation/tests_tokenization_test_list_detailed.txt
+#                    test_preparation/tests_torch_test_list_detailed.txt
 
             - store_artifacts:
                 path: test_preparation/transformed_artifacts.json
