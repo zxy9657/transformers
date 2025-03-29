@@ -1185,7 +1185,7 @@ def create_test_list_from_filter(full_test_list, out_path):
     # But we want to have the list of complete tests under `tests`
     with open("all_tests.txt") as fp:
         data = fp.read().split("\n")
-        print(data)
+        # print(data)
 
     # we want to have a map from files to tests
     file_to_test_map = {}
@@ -1200,7 +1200,7 @@ def create_test_list_from_filter(full_test_list, out_path):
 
     for job_name, _filter in JOB_TO_TEST_FILE.items():
         file_name = os.path.join(out_path, f"{job_name}_test_list.txt")
-        file_name_2 = os.path.join(out_path, f"{job_name}_test_list_detailed.txt")
+        file_name = os.path.join(out_path, f"{job_name}_test_list.txt")
         if job_name == "tests_hub":
             files_to_test = ["tests"]
         else:

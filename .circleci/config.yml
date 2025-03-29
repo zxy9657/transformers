@@ -47,7 +47,7 @@ jobs:
             - run: git branch
             - run: git log -n 2
             - run: uv venv && uv pip install .[dev]
-            - run: python3 -m pytest --collect-only --no-header --no-summary -q tests > all_tests.txt
+#            - run: python3 -m pytest --collect-only --no-header --no-summary -q tests > all_tests.txt
             - run: ls -l all_tests.txt
             - run: tail -10 all_tests.txt
             - run: python utils/tests_fetcher.py | tee tests_fetched_summary.txt
@@ -96,9 +96,9 @@ jobs:
                 path: test_preparation/transformed_artifacts.json
             - store_artifacts:
                 path: test_preparation/artifacts.json
-#            - continuation/continue:
-#                parameters:  test_preparation/transformed_artifacts.json
-#                configuration_path: test_preparation/generated_config.yml
+            - continuation/continue:
+                parameters:  test_preparation/transformed_artifacts.json
+                configuration_path: test_preparation/generated_config.yml
 
     # To run all tests for the nightly build
     fetch_all_tests:
