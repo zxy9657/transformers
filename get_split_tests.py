@@ -20,7 +20,20 @@ if __name__ == "__main__":
 
 
     n_tests_per_split = len(tests) // int(n_splits)
-    stat_idx, end_idx = n_tests_per_split * split_idx, n_tests_per_split * (split_idx + 1)
+    r = len(tests) % int(n_splits)
+
+    split_indices = []
+    start = 0
+    end = 0
+    for idx in range(n_splits):
+        n_tests = n_tests_per_split
+        if idx < r:
+            n_tests += 1
+        end = start + n_tests
+        split_indices.append((start, end))
+        start = end
+
+    stat_idx, end_idx = split_indices[split_idx]
     split_tests = tests[stat_idx:end_idx]
 
     split_tests = "\n".join(split_tests)
