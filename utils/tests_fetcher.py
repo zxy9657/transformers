@@ -1173,6 +1173,9 @@ JOB_TO_TEST_FILE = {
     "tests_tokenization": r"tests/models/.*/test_tokenization.*",
     "pipelines_torch": r"tests/models/.*/test_modeling_(?!(?:flax_|tf_)).*",
 }
+JOB_TO_TEST_FILE = {
+    "tests_torch": r"tests/models/.*/test_modeling_(?!(?:flax_|tf_)).*",
+}
 
 
 def create_test_list_from_filter(full_test_list, out_path):
