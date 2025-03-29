@@ -76,12 +76,19 @@ jobs:
             # We could not pass a nested dict, which is why we create the test_file_... parameters for every single job
 
             - store_artifacts:
+                path: |
+                    test_preparation/pipelines_torch_test_list_detailed.txt
+                    test_preparation/tests_generate_test_list_detailed.txt
+                    test_preparation/tests_tokenization_test_list_detailed.txt
+                    test_preparation/tests_torch_test_list_detailed.txt
+
+            - store_artifacts:
                 path: test_preparation/transformed_artifacts.json
             - store_artifacts:
                 path: test_preparation/artifacts.json
-            - continuation/continue:
-                parameters:  test_preparation/transformed_artifacts.json
-                configuration_path: test_preparation/generated_config.yml
+#            - continuation/continue:
+#                parameters:  test_preparation/transformed_artifacts.json
+#                configuration_path: test_preparation/generated_config.yml
 
     # To run all tests for the nightly build
     fetch_all_tests:
