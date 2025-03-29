@@ -96,6 +96,13 @@ jobs:
                 path: test_preparation/transformed_artifacts.json
             - store_artifacts:
                 path: test_preparation/artifacts.json
+
+            - run:
+                name: "show test_preparation/transformed_artifacts.json"
+                command: |
+                    ls -l test_preparation/transformed_artifacts.json
+                    tail -20 test_preparation/transformed_artifacts.json
+
             - continuation/continue:
                 parameters:  test_preparation/transformed_artifacts.json
                 configuration_path: test_preparation/generated_config.yml
