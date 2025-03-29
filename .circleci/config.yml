@@ -49,7 +49,7 @@ jobs:
             - run: uv venv && uv pip install .[dev]
 #            - run: python3 -m pytest --collect-only --no-header --no-summary -q tests > all_tests.txt
 #            - run: ls -l all_tests.txt
-            - run: tail -10 all_tests.txt
+#            - run: tail -10 all_tests.txt
             - run: python utils/tests_fetcher.py | tee tests_fetched_summary.txt
             - run: python utils/tests_fetcher.py --filter_tests
             - run: export "GIT_COMMIT_MESSAGE=$(git show -s --format=%s)" && echo $GIT_COMMIT_MESSAGE && python .circleci/create_circleci_config.py --fetcher_folder test_preparation
