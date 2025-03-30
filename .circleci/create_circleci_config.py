@@ -85,7 +85,7 @@ class CircleCIJob:
     install_steps: List[str] = None
     marker: Optional[str] = None
     parallelism: Optional[int] = 0
-    pytest_num_workers: int = 8
+    pytest_num_workers: int = 1
     pytest_options: Dict[str, Any] = None
     resource_class: Optional[str] = "xlarge"
     tests_to_run: Optional[List[str]] = None
