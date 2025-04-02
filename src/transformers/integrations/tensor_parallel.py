@@ -163,8 +163,6 @@ def get_tensor_shard(param, empty_param, device_mesh, rank, dim):
             param = torch.tensor([])
     else:
         raise ValueError(f"Unsupported dim {dim}, only dim 0, 1 or 2 are supported")
-    print(rank)
-    print(torch.tensor(param).size())
     return param
 
 
