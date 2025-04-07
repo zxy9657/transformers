@@ -308,9 +308,11 @@ def main():
         # Save predictions
         output_test_predictions_file = os.path.join(training_args.output_dir, "test_predictions.txt")
         if trainer.is_world_process_zero():
-            with open(output_test_predictions_file, "w") as writer:
-                with open(os.path.join(data_args.data_dir, "test.txt")) as f:
-                    token_classification_task.write_predictions_to_file(writer, f, preds_list)
+            with (
+                open(output_test_predictions_file, "w") as writer,
+                open(os.path.join(data_args.data_dir, "test.txt")) as f,
+            ):
+                token_classification_task.write_predictions_to_file(writer, f, preds_list)
 
     return results
 

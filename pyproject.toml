@@ -20,13 +20,19 @@ line-length = 119
 [tool.ruff.lint]
 # Never enforce `E501` (line length violations).
 ignore = ["C901", "E501", "E741", "F402", "F823" ]
-select = ["C", "E", "F", "I", "W"]
+# multiple-with-statements (SIM117)
+# in-dict-keys (SIM118)
+select = ["C", "E", "F", "I", "W", "SIM117", "SIM118"]
 
 # Ignore import violations in all `__init__.py` files.
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["E402", "F401", "F403", "F811"]
 "src/transformers/file_utils.py" = ["F401"]
 "src/transformers/utils/dummy_*.py" = ["F401"]
+"src/transformers/models/*to_hf.py" = ["SIM118"]
+"src/transformers/modeling_utils.py" = ["SIM118"]
+"src/transformers/models/*to_pytorch.py" = ["SIM118"]
+"src/transformers/modeling_flax_pytorch_utils.py" = ["SIM118"]
 
 [tool.ruff.lint.isort]
 lines-after-imports = 2
