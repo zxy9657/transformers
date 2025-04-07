@@ -29,8 +29,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any, Optional, Union
 
-from huggingface_hub import HfFileSystem, try_to_load_from_cache
-from huggingface_hub.errors import OfflineModeIsEnabled
+from huggingface_hub import try_to_load_from_cache
 
 from .utils import (
     HF_MODULES_CACHE,
