@@ -1,4 +1,3 @@
-# coding=utf-8
 # Copyright 2021 The Google AI Flax Team Authors, and The HuggingFace Inc. team.
 # Copyright (c) 2020, NVIDIA CORPORATION.  All rights reserved.
 #

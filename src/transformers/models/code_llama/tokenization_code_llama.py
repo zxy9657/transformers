@@ -1,4 +1,3 @@
-# coding=utf-8
 # Copyright 2023 MetaAI and the HuggingFace Inc. team. All rights reserved.
 #
 #
