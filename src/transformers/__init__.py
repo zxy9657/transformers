@@ -707,6 +707,7 @@ _import_structure = {
     "models.persimmon": ["PersimmonConfig"],
     "models.phi": ["PhiConfig"],
     "models.phi3": ["Phi3Config"],
+    "models.phi3_v": ["Phi3VConfig"],
     "models.phi4_multimodal": [
         "Phi4MultimodalAudioConfig",
         "Phi4MultimodalConfig",
@@ -1313,6 +1314,7 @@ else:
     _import_structure["models.owlv2"].append("Owlv2ImageProcessor")
     _import_structure["models.owlvit"].extend(["OwlViTFeatureExtractor", "OwlViTImageProcessor"])
     _import_structure["models.perceiver"].extend(["PerceiverFeatureExtractor", "PerceiverImageProcessor"])
+    _import_structure["models.phi3_v"].extend(["Phi3VImageProcessor", "Phi3VProcessor"])
     _import_structure["models.pix2struct"].extend(["Pix2StructImageProcessor"])
     _import_structure["models.pixtral"].append("PixtralImageProcessor")
     _import_structure["models.poolformer"].extend(["PoolFormerFeatureExtractor", "PoolFormerImageProcessor"])
@@ -3356,6 +3358,15 @@ else:
             "Phi3ForTokenClassification",
             "Phi3Model",
             "Phi3PreTrainedModel",
+        ]
+    )
+    _import_structure["models.phi3_v"].extend(
+        [
+            "Phi3VForCausalLM",
+            "Phi3VForSequenceClassification",
+            "Phi3VForTokenClassification",
+            "Phi3VModel",
+            "Phi3VPreTrainedModel",
         ]
     )
     _import_structure["models.phimoe"].extend(
@@ -6002,6 +6013,7 @@ if TYPE_CHECKING:
     )
     from .models.phi import PhiConfig
     from .models.phi3 import Phi3Config
+    from .models.phi3_v import Phi3VConfig
     from .models.phi4_multimodal import (
         Phi4MultimodalAudioConfig,
         Phi4MultimodalConfig,
@@ -6633,6 +6645,7 @@ if TYPE_CHECKING:
         from .models.owlv2 import Owlv2ImageProcessor
         from .models.owlvit import OwlViTFeatureExtractor, OwlViTImageProcessor
         from .models.perceiver import PerceiverFeatureExtractor, PerceiverImageProcessor
+        from .models.phi3_v import Phi3VImageProcessor, Phi3VProcessor
         from .models.pix2struct import Pix2StructImageProcessor
         from .models.pixtral import PixtralImageProcessor
         from .models.poolformer import (
@@ -8271,6 +8284,13 @@ if TYPE_CHECKING:
             Phi3ForTokenClassification,
             Phi3Model,
             Phi3PreTrainedModel,
+        )
+        from .models.phi3_v import (
+            Phi3VForCausalLM,
+            Phi3VForSequenceClassification,
+            Phi3VForTokenClassification,
+            Phi3VModel,
+            Phi3VPreTrainedModel,
         )
         from .models.phi4_multimodal import (
             Phi4MultimodalAudioModel,
