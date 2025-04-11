@@ -1,4 +1,3 @@
-# coding=utf-8
 # Copyright 2023 HuggingFace Inc. Team and Bigscience Workshop. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");

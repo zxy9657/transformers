@@ -1,4 +1,3 @@
-# coding=utf-8
 # Copyright 2021 The Eleuther AI and The Google Flax Team Authors and The HuggingFace Inc. team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
