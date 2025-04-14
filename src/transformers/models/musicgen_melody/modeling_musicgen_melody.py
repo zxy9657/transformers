@@ -97,7 +97,7 @@ class MusicgenMelodyOutputWithPast(ModelOutput):
     """
 
     loss: Optional[torch.FloatTensor] = None
-    logits: torch.FloatTensor = None
+    logits: Optional[torch.FloatTensor] = None
     past_key_values: Optional[Tuple[Tuple[torch.FloatTensor]]] = None
     hidden_states: Optional[Tuple[torch.FloatTensor]] = None
     attentions: Optional[Tuple[torch.FloatTensor]] = None
@@ -677,6 +677,11 @@ class MusicgenMelodyPreTrainedModel(PreTrainedModel):
             module.weight.data.normal_(mean=0.0, std=std)
             if module.padding_idx is not None:
                 module.weight.data[module.padding_idx].zero_()
+        elif isinstance(module, MusicgenMelodySinusoidalPositionalEmbedding):
+            weights = module.get_embedding(*module.weights.shape)
+            weights = nn.Parameter(weights, requires_grad=False)
+            weights.detach_()
+            module.weights = weights
 
 
 MUSICGEN_MELODY_START_DOCSTRING = r"""
@@ -894,7 +899,7 @@ class MusicgenMelodyDecoder(MusicgenMelodyPreTrainedModel):
     # Ignore copy
     def forward(
         self,
-        input_ids: torch.LongTensor = None,
+        input_ids: Optional[torch.LongTensor] = None,
         attention_mask: Optional[torch.Tensor] = None,
         encoder_hidden_states: Optional[torch.FloatTensor] = None,
         encoder_attention_mask: Optional[torch.LongTensor] = None,
@@ -1070,7 +1075,7 @@ class MusicgenMelodyModel(MusicgenMelodyPreTrainedModel):
     # Ignore copy
     def forward(
         self,
-        input_ids: torch.LongTensor = None,
+        input_ids: Optional[torch.LongTensor] = None,
         attention_mask: Optional[torch.Tensor] = None,
         encoder_hidden_states: Optional[torch.FloatTensor] = None,
         encoder_attention_mask: Optional[torch.LongTensor] = None,
@@ -1157,7 +1162,7 @@ class MusicgenMelodyForCausalLM(MusicgenMelodyPreTrainedModel, GenerationMixin):
     # Ignore copy
     def forward(
         self,
-        input_ids: torch.LongTensor = None,
+        input_ids: Optional[torch.LongTensor] = None,
         attention_mask: Optional[torch.Tensor] = None,
         encoder_hidden_states: Optional[torch.FloatTensor] = None,
         encoder_attention_mask: Optional[torch.LongTensor] = None,
@@ -2558,3 +2563,11 @@ class MusicgenMelodyForConditionalGeneration(PreTrainedModel, GenerationMixin):
             return outputs
         else:
             return output_values
+
+
+__all__ = [
+    "MusicgenMelodyForConditionalGeneration",
+    "MusicgenMelodyForCausalLM",
+    "MusicgenMelodyModel",
+    "MusicgenMelodyPreTrainedModel",
+]
