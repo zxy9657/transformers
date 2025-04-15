@@ -125,6 +125,7 @@ if TYPE_CHECKING:
     from .gpt_sw3 import *
     from .gptj import *
     from .granite import *
+    from .granite_speech import *
     from .granitemoe import *
     from .granitemoeshared import *
     from .grounding_dino import *
@@ -178,6 +179,7 @@ if TYPE_CHECKING:
     from .mistral import *
     from .mistral3 import *
     from .mixtral import *
+    from .mlcd import *
     from .mllama import *
     from .mluke import *
     from .mobilebert import *
