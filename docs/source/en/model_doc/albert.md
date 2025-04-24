@@ -28,13 +28,6 @@ rendered properly in your Markdown viewer.
 [ALBERT](https://huggingface.co/papers/1909.11942) is designed to address memory limitations of scaling and training of [BERT](./bert). It adds two parameter reduction techniques. The first, factorized embedding parametrization, splits the larger vocabulary embedding matrix into two smaller matrices so you can grow the hidden size without adding a lot more parameters. The second, cross-layer parameter sharing, allows layer to share parameters which keeps the number of learnable parameters lower.
 
 
-ALBERT was created to address problems like -- GPU/TPU memory limitations, longer training times, and unexpected model degradation in BERT. ALBERT uses two parameter-reduction techniques to lower memory consumption and increase the training speed of BERT:
-
-- **Factorized embedding parameterization:** The large vocabulary embedding matrix is decomposed into two smaller matrices, reducing memory consumption.
-- **Cross-layer parameter sharing:** Instead of learning separate parameters for each transformer layer, ALBERT shares parameters across layers, further reducing the number of learnable weights.
-
-ALBERT uses absolute position embeddings (like BERT) so padding is applied at right. Size of embeddings is 128 While BERT uses 768. ALBERT can processes maximum 512 token at a time. 
-
 You can find all the original ALBERT checkpoints under the [ALBERT community](https://huggingface.co/albert) organization.
 
 > [!TIP]
@@ -147,6 +140,7 @@ with torch.no_grad():
 - ALBERT requires absolute positional embeddings, and it expects right-padding (i.e., pad tokens should be added at the end, not the beginning).
 - ALBERT uses token_type_ids, just like BERT. So you should indicate which token belongs to which segment (e.g., sentence A vs. sentence B) when doing tasks like question answering or sentence-pair classification.
 - ALBERT uses a different pretraining objective called Sentence Order Prediction (SOP) instead of Next Sentence Prediction (NSP), so fine-tuned models might behave slightly differently from BERT when modeling inter-sentence relationships.
+- ALBERT uses absolute position embeddings (like BERT) so padding is applied at right. Size of embeddings is 128 While BERT uses 768. ALBERT can processes maximum 512 token at a time. 
 
 ## Resources
 
