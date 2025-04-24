@@ -36,7 +36,7 @@ ALBERT was created to address problems like -- GPU/TPU memory limitations, longe
 
 ALBERT uses absolute position embeddings (like BERT) so padding is applied at right. Size of embeddings is 128 While BERT uses 768. ALBERT can processes maximum 512 token at a time. 
 
-You can find all the original ALBERT checkpoints [HERE](https://huggingface.co/collections/google/albert-release-64ff65ba18830fabea2f2cec)
+You can find all the original ALBERT checkpoints under the [ALBERT community](https://huggingface.co/albert) organization.
 
 > [!TIP]
 > Click on the ALBERT models in the right sidebar for more examples of how to apply ALBERT to different natural language processing (NLP) tasks.
