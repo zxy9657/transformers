@@ -573,6 +573,8 @@ class AlbertPreTrainedModel(PreTrainedModel):
         elif isinstance(module, nn.LayerNorm):
             module.bias.data.zero_()
             module.weight.data.fill_(1.0)
+        elif isinstance(module, AlbertMLMHead):
+            module.bias.data.zero_()
 
 
 @dataclass
@@ -603,8 +605,8 @@ class AlbertForPreTrainingOutput(ModelOutput):
     """
 
     loss: Optional[torch.FloatTensor] = None
-    prediction_logits: torch.FloatTensor = None
-    sop_logits: torch.FloatTensor = None
+    prediction_logits: Optional[torch.FloatTensor] = None
+    sop_logits: Optional[torch.FloatTensor] = None
     hidden_states: Optional[Tuple[torch.FloatTensor]] = None
     attentions: Optional[Tuple[torch.FloatTensor]] = None
 
