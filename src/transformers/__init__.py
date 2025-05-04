@@ -332,7 +332,6 @@ _import_structure = {
     ],
     "models.cvt": ["CvtConfig"],
     "models.dab_detr": ["DabDetrConfig"],
-    "models.dino_detr": ["DinoDetrConfig"],
     "models.dac": ["DacConfig", "DacFeatureExtractor"],
     "models.data2vec": [
         "Data2VecAudioConfig",
@@ -409,6 +408,7 @@ _import_structure = {
     "models.dialogpt": [],
     "models.diffllama": ["DiffLlamaConfig"],
     "models.dinat": ["DinatConfig"],
+    "models.dino_detr": ["DinoDetrConfig"],
     "models.dinov2": ["Dinov2Config"],
     "models.dinov2_with_registers": ["Dinov2WithRegistersConfig"],
     "models.distilbert": [
@@ -1249,7 +1249,6 @@ else:
     _import_structure["models.deformable_detr"].extend(
         ["DeformableDetrFeatureExtractor", "DeformableDetrImageProcessor"]
     )
-    _import_structure["models.dino_detr"].extend(["DinoDetrFeatureExtractor", "DinoDetrImageProcessor"])
     _import_structure["models.deit"].extend(["DeiTFeatureExtractor", "DeiTImageProcessor"])
     _import_structure["models.deprecated.deta"].append("DetaImageProcessor")
     _import_structure["models.deprecated.efficientformer"].append("EfficientFormerImageProcessor")
@@ -1257,6 +1256,7 @@ else:
     _import_structure["models.deprecated.vit_hybrid"].extend(["ViTHybridImageProcessor"])
     _import_structure["models.depth_pro"].extend(["DepthProImageProcessor", "DepthProImageProcessorFast"])
     _import_structure["models.detr"].extend(["DetrFeatureExtractor", "DetrImageProcessor"])
+    _import_structure["models.dino_detr"].extend(["DinoDetrFeatureExtractor", "DinoDetrImageProcessor"])
     _import_structure["models.donut"].extend(["DonutFeatureExtractor", "DonutImageProcessor"])
     _import_structure["models.dpt"].extend(["DPTFeatureExtractor", "DPTImageProcessor"])
     _import_structure["models.efficientnet"].append("EfficientNetImageProcessor")
@@ -1941,13 +1941,6 @@ else:
             "DabDetrPreTrainedModel",
         ]
     )
-    _import_structure["models.dino_detr"].extend(
-        [
-            "DinoDetrForObjectDetection",
-            "DinoDetrModel",
-            "DinoDetrPreTrainedModel",
-        ]
-    )
     _import_structure["models.dac"].extend(
         [
             "DacModel",
@@ -2245,6 +2238,13 @@ else:
             "DinatForImageClassification",
             "DinatModel",
             "DinatPreTrainedModel",
+        ]
+    )
+    _import_structure["models.dino_detr"].extend(
+        [
+            "DinoDetrForObjectDetection",
+            "DinoDetrModel",
+            "DinoDetrPreTrainedModel",
         ]
     )
     _import_structure["models.dinov2"].extend(
