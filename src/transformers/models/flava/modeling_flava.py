@@ -604,7 +604,7 @@ class FlavaLayer(nn.Module):
         self.intermediate = FlavaIntermediate(config)
         self.output = FlavaOutput(config)
 
-        # TODO: Check fp32 layer norm possiblity
+        # TODO: Check fp32 layer norm possibility
         self.layernorm_before = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.layernorm_after = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
@@ -874,6 +874,18 @@ class FlavaPreTrainedModel(PreTrainedModel):
         elif isinstance(module, nn.LayerNorm):
             module.bias.data.zero_()
             module.weight.data.fill_(1.0)
+        elif isinstance(module, FlavaMaskedPredictionHead):
+            module.bias.data.zero_()
+        elif isinstance(module, FlavaImageEmbeddings):
+            module.cls_token.data.zero_()
+            module.position_embeddings.data.zero_()
+            if module.mask_token is not None:
+                module.mask_token.data.zero_()
+        elif isinstance(module, FlavaMultimodalModel):
+            if module.use_cls_token:
+                module.cls_token.data.zero_()
+        elif isinstance(module, FlavaModel):
+            module.logit_scale.data.fill_(self.config.logit_scale_init_value)
 
 
 @add_start_docstrings(
@@ -1791,7 +1803,7 @@ class FlavaForPreTraining(FlavaPreTrainedModel):
         bool_masked_pos: Optional[torch.Tensor] = None,
         position_ids: Optional[torch.LongTensor] = None,
         image_attention_mask: Optional[torch.Tensor] = None,
-        skip_unmasked_multimodal_encoder: bool = None,
+        skip_unmasked_multimodal_encoder: Optional[bool] = None,
         mlm_labels: Optional[torch.Tensor] = None,
         mim_labels: Optional[torch.Tensor] = None,
         itm_labels: Optional[torch.Tensor] = None,
