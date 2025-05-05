@@ -80,6 +80,7 @@ from . import (
     dialogpt,
     diffllama,
     dinat,
+    dino_detr,
     dinov2,
     dinov2_with_registers,
     distilbert,
