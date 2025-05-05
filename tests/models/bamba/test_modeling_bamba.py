@@ -556,7 +556,7 @@ class BambaModelTest(ModelTesterMixin, GenerationTesterMixin, PipelineTesterMixi
                     for i, a in zip(inputs_dict["input_ids"], inputs_dict["attention_mask"])
                 ]
 
-                # add position_ids + fa_kwargs
+                # add position_ids + fa_kwargs + seq_idx
                 data_collator = DataCollatorWithFlattening(
                     return_tensors="pt", return_seq_idx=True, return_flash_attn_kwargs=True
                 )
@@ -598,7 +598,7 @@ class BambaModelTest(ModelTesterMixin, GenerationTesterMixin, PipelineTesterMixi
                 for i, a in zip(inputs_dict["input_ids"], inputs_dict["attention_mask"])
             ]
 
-            # add position_ids + fa_kwargs
+            # add position_ids + fa_kwargs + seq_idx
             data_collator = DataCollatorWithFlattening(
                 return_tensors="pt", return_seq_idx=True, return_flash_attn_kwargs=True
             )
