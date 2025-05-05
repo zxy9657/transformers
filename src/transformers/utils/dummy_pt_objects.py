@@ -3684,6 +3684,27 @@ class DinatPreTrainedModel(metaclass=DummyObject):
         requires_backends(self, ["torch"])
 
 
+class DinoDetrForObjectDetection(metaclass=DummyObject):
+    _backends = ["torch"]
+
+    def __init__(self, *args, **kwargs):
+        requires_backends(self, ["torch"])
+
+
+class DinoDetrModel(metaclass=DummyObject):
+    _backends = ["torch"]
+
+    def __init__(self, *args, **kwargs):
+        requires_backends(self, ["torch"])
+
+
+class DinoDetrPreTrainedModel(metaclass=DummyObject):
+    _backends = ["torch"]
+
+    def __init__(self, *args, **kwargs):
+        requires_backends(self, ["torch"])
+
+
 class Dinov2Backbone(metaclass=DummyObject):
     _backends = ["torch"]
 
