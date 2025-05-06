@@ -742,25 +742,30 @@ def _load_state_dict_into_meta_model(
     if is_meta_state_dict:
         file_pointer = safe_open(shard_file, framework="pt", device=tensor_device)
 
-    for param_name, empty_param in state_dict.items():
+    for param_name, _ in model.named_parameters(remove_duplicate=False):
+        empty_param = state_dict.get(param_name)
         if param_name not in expected_keys:
             continue
 
-        # we need to use serialized_param_name as file pointer is untouched
-        if is_meta_state_dict:
-            # This is the name of the parameter as it appears on disk file
-            serialized_param_name = reverse_renaming_mapping[param_name]
-            param = file_pointer.get_slice(serialized_param_name)
+        if empty_param is None:
+            # tied weights case such as lm_head
+            pass
         else:
-            param = empty_param.to(tensor_device)  # It is actually not empty!
+            # we need to use serialized_param_name as file pointer is untouched
+            if is_meta_state_dict:
+                # This is the name of the parameter as it appears on disk file
+                serialized_param_name = reverse_renaming_mapping[param_name]
+                param = file_pointer.get_slice(serialized_param_name)
+            else:
+                param = empty_param.to(tensor_device)  # It is actually not empty!
 
-        to_contiguous, casting_dtype = _infer_parameter_dtype(
-            model,
-            param_name,
-            empty_param,
-            keep_in_fp32_regex,
-            hf_quantizer,
-        )
+            to_contiguous, casting_dtype = _infer_parameter_dtype(
+                model,
+                param_name,
+                empty_param,
+                keep_in_fp32_regex,
+                hf_quantizer,
+            )
 
         if device_mesh is not None:  # In this case, the param is already on the correct device!
             shard_and_distribute_module(
@@ -770,7 +775,7 @@ def _load_state_dict_into_meta_model(
                 param_name,
                 casting_dtype,
                 to_contiguous,
-                int(os.environ["RANK"]),  # the rank
+                device_mesh.get_local_rank(),
                 device_mesh,
             )
         else:
@@ -3497,13 +3502,16 @@ class PreTrainedModel(nn.Module, ModuleUtilsMixin, PushToHubMixin, PeftAdapterMi
         state_dict = self._fix_state_dict_keys_on_save(state_dict)
 
         if safe_serialization:
+            # TODO: fix safe_serialization for tied weights
             # Safetensors does not allow tensor aliasing.
             # We're going to remove aliases before saving
             ptrs = collections.defaultdict(list)
             for name, tensor in state_dict.items():
+                if isinstance(tensor, torch.distributed.tensor.DTensor):
+                    tensor = tensor.to_local()
                 # Sometimes in the state_dict we have non-tensor objects.
                 # e.g. in bitsandbytes we have some `str` objects in the state_dict
-                if isinstance(tensor, torch.Tensor):
+                elif isinstance(tensor, torch.Tensor):
                     ptrs[id_tensor_storage(tensor)].append(name)
                 else:
                     # In the non-tensor case, fall back to the pointer of the object itself
@@ -3638,6 +3646,10 @@ class PreTrainedModel(nn.Module, ModuleUtilsMixin, PushToHubMixin, PeftAdapterMi
                 shard = shard_state_dict
                 del shard_state_dict
                 gc.collect()
+
+            for name, tensor in shard.items():
+                if isinstance(tensor, torch.distributed.tensor.DTensor):
+                    shard[name] = tensor.to_local()
 
             if safe_serialization:
                 # At some point we will need to deal better with save_function (used for TPU and other distributed
@@ -3971,6 +3983,8 @@ class PreTrainedModel(nn.Module, ModuleUtilsMixin, PushToHubMixin, PeftAdapterMi
                 `torchrun [args] script.py`. This will be much faster than using a `device_map`, but has limitations.
             tp_size (`str`, *optional*):
                 A torch tensor parallel degree. If not provided would default to world size.
+            device_mesh (`torch.distributed.DeviceMesh`, *optional*):
+                A torch device mesh. If not provided would default to world size. Used only for tensor parallel for now.
             offload_folder (`str` or `os.PathLike`, *optional*):
                 If the `device_map` contains any value `"disk"`, the folder where we will offload weights.
             offload_state_dict (`bool`, *optional*):
@@ -4068,6 +4082,7 @@ class PreTrainedModel(nn.Module, ModuleUtilsMixin, PushToHubMixin, PeftAdapterMi
         gguf_file = kwargs.pop("gguf_file", None)
         tp_plan = kwargs.pop("tp_plan", None)
         tp_size = kwargs.pop("tp_size", None)
+        device_mesh = kwargs.pop("device_mesh", None)
         key_mapping = kwargs.pop("key_mapping", None)
         # Not used anymore -- remove them from the kwargs
         _ = kwargs.pop("resume_download", None)
@@ -4097,59 +4112,63 @@ class PreTrainedModel(nn.Module, ModuleUtilsMixin, PushToHubMixin, PeftAdapterMi
 
         # We need to correctly dispatch the model on the current process device. The easiest way for this is to use a simple
         # `device_map` pointing to the correct device
-        device_mesh = None
-        if tp_plan is not None:
-            if not is_torch_greater_or_equal("2.5"):
-                raise EnvironmentError("tensor parallel is only supported for `torch>=2.5`.")
+        if device_mesh is None:
+            if tp_plan is not None:
+                if not is_torch_greater_or_equal("2.5"):
+                    raise EnvironmentError("tensor parallel is only supported for `torch>=2.5`.")
 
-            # Detect the accelerator on the machine. If no accelerator is available, it returns CPU.
-            device_type = torch._C._get_accelerator().type
+                # Detect the accelerator on the machine. If no accelerator is available, it returns CPU.
+                device_type = torch._C._get_accelerator().type
 
-            if not torch.distributed.is_initialized():
-                try:
-                    rank = int(os.environ["RANK"])
-                    world_size = int(os.environ["WORLD_SIZE"])
-                    if device_type == "cuda":
-                        torch.distributed.init_process_group(
-                            "nccl", rank=rank, world_size=world_size, init_method="env://"
-                        )
-                        torch.cuda.set_device(int(os.environ["LOCAL_RANK"]))
-                    elif device_type == "cpu":
-                        cpu_backend = "ccl" if int(os.environ.get("CCL_WORKER_COUNT", 0)) else "gloo"
-                        torch.distributed.init_process_group(cpu_backend, rank=rank, world_size=world_size)
-                    elif device_type == "xpu":
-                        torch.distributed.init_process_group("ccl", rank=rank, world_size=world_size)
-                        torch.xpu.set_device(int(os.environ["LOCAL_RANK"]))
-                    elif device_type == "hpu":
-                        torch.distributed.init_process_group("hccl", rank=rank, world_size=world_size)
-                        torch.hpu.set_device(int(os.environ["LOCAL_RANK"]))
+                if not torch.distributed.is_initialized():
+                    try:
+                        rank = int(os.environ["RANK"])
+                        world_size = int(os.environ["WORLD_SIZE"])
+                        if device_type == "cuda":
+                            torch.distributed.init_process_group(
+                                "nccl", rank=rank, world_size=world_size, init_method="env://"
+                            )
+                            torch.cuda.set_device(int(os.environ["LOCAL_RANK"]))
+                        elif device_type == "cpu":
+                            cpu_backend = "ccl" if int(os.environ.get("CCL_WORKER_COUNT", 0)) else "gloo"
+                            torch.distributed.init_process_group(cpu_backend, rank=rank, world_size=world_size)
+                        elif device_type == "xpu":
+                            torch.distributed.init_process_group("ccl", rank=rank, world_size=world_size)
+                            torch.xpu.set_device(int(os.environ["LOCAL_RANK"]))
+                        elif device_type == "hpu":
+                            torch.distributed.init_process_group("hccl", rank=rank, world_size=world_size)
+                            torch.hpu.set_device(int(os.environ["LOCAL_RANK"]))
 
-                except Exception as e:
-                    raise EnvironmentError(
-                        "We tried to initialize torch.distributed for you, but it failed, make"
-                        "sure you init torch distributed in your script to use `tp_plan='auto'`"
-                    ) from e
+                    except Exception as e:
+                        raise EnvironmentError(
+                            "We tried to initialize torch.distributed for you, but it failed, make"
+                            "sure you init torch distributed in your script to use `tp_plan='auto'`"
+                        ) from e
 
-            # Get device with index assuming equal number of devices per host
-            if device_type == "xpu":
-                index = torch.xpu.current_device()
-            elif device_type == "hpu":
-                index = torch.hpu.current_device()
-            else:
-                index = None if device_type == "cpu" else torch.cuda.current_device()
-            tp_device = torch.device(device_type, index)
+                # Get device with index assuming equal number of devices per host
+                if device_type == "xpu":
+                    index = torch.xpu.current_device()
+                elif device_type == "hpu":
+                    index = torch.hpu.current_device()
+                else:
+                    index = None if device_type == "cpu" else torch.cuda.current_device()
+                tp_device = torch.device(device_type, index)
 
-            if index is not None and index > 0:
-                import sys
+                if index is not None and index > 0:
+                    import sys
 
-                sys.stdout = open(os.devnull, "w")
-                sys.stderr = open(os.devnull, "w")
-            # This is the easiest way to dispatch to the current process device
-            device_map = tp_device
+                    sys.stdout = open(os.devnull, "w")
+                    sys.stderr = open(os.devnull, "w")
+                # This is the easiest way to dispatch to the current process device
+                device_map = tp_device
 
-            # Assuming sharding the model onto the world when tp_size not provided
-            tp_size = tp_size if tp_size is not None else torch.distributed.get_world_size()
-            device_mesh = torch.distributed.init_device_mesh(tp_device.type, (tp_size,))
+                # Assuming sharding the model onto the world when tp_size not provided
+                tp_size = tp_size if tp_size is not None else torch.distributed.get_world_size()
+                device_mesh = torch.distributed.init_device_mesh(tp_device.type, (tp_size,))
+        else:
+            # TODO: make device_mesh support multiple dimensions
+            assert device_mesh.ndim == 1, "device_mesh must be 1 dimensional and will be used for TP"
+            device_map = torch.device(device_mesh.device_type, int(os.environ["LOCAL_RANK"]))
 
         if use_auth_token is not None:
             warnings.warn(
@@ -5036,7 +5055,7 @@ class PreTrainedModel(nn.Module, ModuleUtilsMixin, PushToHubMixin, PeftAdapterMi
                         name,
                         casting_dtype,
                         to_contiguous,
-                        os.environ["RANK"],
+                        device_mesh.get_local_rank(),
                         device_mesh,
                     )
 
