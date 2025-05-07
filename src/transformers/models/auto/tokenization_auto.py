@@ -361,6 +361,7 @@ else:
             ),
             ("mllama", ("LlamaTokenizer", "LlamaTokenizerFast" if is_tokenizers_available() else None)),
             ("mluke", ("MLukeTokenizer" if is_sentencepiece_available() else None, None)),
+            ("mm-grounding-dino", ("BertTokenizer", "BertTokenizerFast" if is_tokenizers_available() else None)),
             ("mobilebert", ("MobileBertTokenizer", "MobileBertTokenizerFast" if is_tokenizers_available() else None)),
             ("modernbert", (None, "PreTrainedTokenizerFast" if is_tokenizers_available() else None)),
             ("moonshine", (None, "PreTrainedTokenizerFast" if is_tokenizers_available() else None)),
