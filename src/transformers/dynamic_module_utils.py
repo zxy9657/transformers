@@ -663,13 +663,25 @@ def _raise_timeout_error(signum, frame):
 TIME_OUT_REMOTE_CODE = 15
 
 
-def resolve_trust_remote_code(trust_remote_code, model_name, upstream_repo, has_local_code, has_remote_code):
+def resolve_trust_remote_code(trust_remote_code, model_name, has_local_code, has_remote_code, upstream_repo=None):
     if upstream_repo is not None:
-        base_message = f"The repository {model_name} references custom code contained in {upstream_repo} which must be executed to correctly load the model. You can inspect the repository content at https://hf.co/{upstream_repo}\n"
+        base_message = (
+            f"The repository {model_name} references custom code contained in {upstream_repo} which "
+            f"must be executed to correctly load the model. You can inspect the repository "
+            f"content at https://hf.co/{upstream_repo}\n"
+        )
     elif os.path.isdir(model_name):
-        base_message = f"The repository {model_name} contains custom code which must be executed to correctly load the model. You can inspect the repository content at {os.path.abspath(model_name)}\n"
+        base_message = (
+            f"The repository {model_name} contains custom code which must be executed "
+            f"to correctly load the model. You can inspect the repository "
+            f"content at {os.path.abspath(model_name)}\n"
+        )
     else:
-        base_message = f"The repository {model_name} contains custom code which must be executed to correctly load the model. You can inspect the repository content at https://hf.co/{model_name}\n"
+        base_message = (
+            f"The repository {model_name} contains custom code which must be executed "
+            f"to correctly load the model. You can inspect the repository "
+            f"content at https://hf.co/{model_name}\n"
+        )
 
     if trust_remote_code is None:
         if has_local_code:
