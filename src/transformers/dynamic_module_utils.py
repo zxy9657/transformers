@@ -668,19 +668,19 @@ def resolve_trust_remote_code(trust_remote_code, model_name, has_local_code, has
         base_message = (
             f"The repository {model_name} references custom code contained in {upstream_repo} which "
             f"must be executed to correctly load the model. You can inspect the repository "
-            f"content at https://hf.co/{upstream_repo}\n"
+            f"content at https://hf.co/{upstream_repo} .\n"
         )
     elif os.path.isdir(model_name):
         base_message = (
             f"The repository {model_name} contains custom code which must be executed "
             f"to correctly load the model. You can inspect the repository "
-            f"content at {os.path.abspath(model_name)}\n"
+            f"content at {os.path.abspath(model_name)} .\n"
         )
     else:
         base_message = (
             f"The repository {model_name} contains custom code which must be executed "
             f"to correctly load the model. You can inspect the repository "
-            f"content at https://hf.co/{model_name}\n"
+            f"content at https://hf.co/{model_name} .\n"
         )
 
     if trust_remote_code is None:
