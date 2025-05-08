@@ -664,21 +664,26 @@ TIME_OUT_REMOTE_CODE = 15
 
 
 def resolve_trust_remote_code(trust_remote_code, model_name, upstream_repo, has_local_code, has_remote_code):
+    if upstream_repo is not None:
+        base_message = f"The repository {model_name} references custom code contained in {upstream_repo} which must be executed to correctly load the model. You can inspect the repository content at https://hf.co/{upstream_repo}\n"
+    elif os.path.isdir(model_name):
+        base_message = f"The repository {model_name} contains custom code which must be executed to correctly load the model. You can inspect the repository content at {os.path.abspath(model_name)}\n"
+    else:
+        base_message = f"The repository {model_name} contains custom code which must be executed to correctly load the model. You can inspect the repository content at https://hf.co/{model_name}\n"
+
     if trust_remote_code is None:
         if has_local_code:
             trust_remote_code = False
         elif has_remote_code and TIME_OUT_REMOTE_CODE > 0:
-
             prev_sig_handler = None
             try:
                 prev_sig_handler = signal.signal(signal.SIGALRM, _raise_timeout_error)
                 signal.alarm(TIME_OUT_REMOTE_CODE)
                 while trust_remote_code is None:
                     answer = input(
-                        f"The repository for {model_name} contains custom code which must be executed to correctly "
-                        f"load the model. You can inspect the repository content at https://hf.co/{model_name}.\n"
-                        f"You can avoid this prompt in future by passing the argument `trust_remote_code=True`.\n\n"
-                        f"Do you wish to run the custom code? [y/N] "
+                        base_message
+                        + "You can avoid this prompt in future by passing the argument `trust_remote_code=True`.\n\n"
+                        "Do you wish to run the custom code? [y/N] "
                     )
                     if answer.lower() in ["yes", "y", "1"]:
                         trust_remote_code = True
@@ -688,9 +693,7 @@ def resolve_trust_remote_code(trust_remote_code, model_name, upstream_repo, has_
             except Exception:
                 # OS which does not support signal.SIGALRM
                 raise ValueError(
-                    f"The repository for {model_name} contains custom code which must be executed to correctly "
-                    f"load the model. You can inspect the repository content at https://hf.co/{model_name}.\n"
-                    f"Please pass the argument `trust_remote_code=True` to allow custom code to be run."
+                    base_message + "Please pass the argument `trust_remote_code=True` to allow custom code to be run."
                 )
             finally:
                 if prev_sig_handler is not None:
@@ -701,10 +704,17 @@ def resolve_trust_remote_code(trust_remote_code, model_name, upstream_repo, has_
             _raise_timeout_error(None, None)
 
     if has_remote_code and not has_local_code and not trust_remote_code:
-        raise ValueError(
-            f"Loading {model_name} requires you to execute the configuration file in that"
-            " repo on your local machine. Make sure you have read the code there to avoid malicious use, then"
-            " set the option `trust_remote_code=True` to remove this error."
-        )
+        if upstream_repo is None:
+            raise ValueError(
+                f"Loading {model_name} requires you to execute custom code contained in that"
+                " repo on your local machine. Make sure you have read the code there to avoid malicious use, then"
+                " set the option `trust_remote_code=True` to remove this error."
+            )
+        else:
+            raise ValueError(
+                f"Loading {model_name} requires you to execute custom code contained in {upstream_repo} "
+                f"on your local machine. Make sure you have read the code there to avoid malicious use, then"
+                " set the option `trust_remote_code=True` to remove this error."
+            )
 
     return trust_remote_code
