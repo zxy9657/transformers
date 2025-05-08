@@ -98,7 +98,7 @@ class Cache:
         else:
             return None
 
-    def get_mask_size_and_pattern(
+    def get_mask_sizes_and_patterns(
         self, cache_position: torch.Tensor, num_layers: int
     ) -> tuple[list[tuple], list[int]]:
         """
@@ -1316,7 +1316,7 @@ class StaticCache(Cache):
             self.key_cache[layer_idx].zero_()
             self.value_cache[layer_idx].zero_()
 
-    def get_mask_size_and_pattern(
+    def get_mask_sizes_and_patterns(
         self, cache_position: torch.Tensor, num_layers: int
     ) -> tuple[list[tuple], list[int]]:
         """
@@ -1473,7 +1473,7 @@ class SlidingWindowCache(StaticCache):
             self.key_cache[layer_idx].zero_()
             self.value_cache[layer_idx].zero_()
 
-    def get_mask_size_and_pattern(
+    def get_mask_sizes_and_patterns(
         self, cache_position: torch.Tensor, num_layers: int
     ) -> tuple[list[tuple], list[int]]:
         """
@@ -1863,7 +1863,7 @@ class HybridCache(Cache):
             self.key_cache[layer_idx].zero_()
             self.value_cache[layer_idx].zero_()
 
-    def get_mask_size_and_pattern(
+    def get_mask_sizes_and_patterns(
         self, cache_position: torch.Tensor, num_layers: int
     ) -> tuple[list[tuple], list[int]]:
         """
@@ -2086,7 +2086,7 @@ class HybridChunkedCache(Cache):
             self.value_cache[layer_idx].zero_()
         self.cumulative_length = [0 for _ in range(len(self.cumulative_length))]
 
-    def get_mask_size_and_pattern(
+    def get_mask_sizes_and_patterns(
         self, cache_position: torch.Tensor, num_layers: int
     ) -> tuple[list[tuple], list[int]]:
         """
