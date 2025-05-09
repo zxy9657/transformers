@@ -18,11 +18,7 @@ from typing import Any, Optional, TypedDict, Union
 
 import numpy as np
 
-from .image_processing_utils import (
-    BaseImageProcessor,
-    BatchFeature,
-    get_size_dict,
-)
+from .image_processing_utils import BaseImageProcessor, BatchFeature, get_size_dict
 from .image_transforms import (
     convert_to_rgb,
     get_resize_output_image_size,
@@ -232,6 +228,14 @@ class BaseImageProcessorFast(BaseImageProcessor):
                 setattr(self, key, kwarg)
             else:
                 setattr(self, key, getattr(self, key, None))
+
+        # get valid kwargs names
+        self._valid_kwargs_names = list(self.valid_kwargs.__annotations__.keys())
+
+        # get valid preprocessor arguments (not kwargs and `self`), e.g. annotations, masks_path etc.
+        self._valid_preprocess_args = list(
+            self.preprocess.__code__.co_varnames[1 : self.preprocess.__code__.co_argcount]
+        )
 
     def resize(
         self,
@@ -566,12 +570,22 @@ class BaseImageProcessorFast(BaseImageProcessor):
             data_format=data_format,
         )
 
+    def __call__(self, images: ImageInput, *args, **kwargs: Unpack[DefaultFastImageProcessorKwargs]) -> BatchFeature:
+        return self.preprocess(images, *args, **kwargs)
+
     @auto_docstring
-    def preprocess(self, images: ImageInput, **kwargs: Unpack[DefaultFastImageProcessorKwargs]) -> BatchFeature:
-        validate_kwargs(captured_kwargs=kwargs.keys(), valid_processor_keys=self.valid_kwargs.__annotations__.keys())
+    def preprocess(self, images: ImageInput, *args, **kwargs: Unpack[DefaultFastImageProcessorKwargs]) -> BatchFeature:
+        # The child class's `preprocess` method can support additional arguments, e.g. annotations, masks_path etc.,
+        # which are not present in `ModelFastImageProcessorKwargs`. These arguments are captured in the `__init__` method
+        # based on the signature of the child's `preprocess` method, and stored in `self._valid_preprocess_args`.
+        # Since these arguments are valid for the child class and can be passed as kwargs to the super class,
+        # we need to add them to the valid processor keys.
+
+        valid_processor_keys = self._valid_kwargs_names + self._valid_preprocess_args
+        validate_kwargs(captured_kwargs=kwargs.keys(), valid_processor_keys=valid_processor_keys)
         # Set default kwargs from self. This ensures that if a kwarg is not provided
         # by the user, it gets its default value from the instance, or is set to None.
-        for kwarg_name in self.valid_kwargs.__annotations__:
+        for kwarg_name in self._valid_kwargs_names:
             kwargs.setdefault(kwarg_name, getattr(self, kwarg_name, None))
 
         # Extract parameters that are only used for preparing the input images
@@ -603,7 +617,7 @@ class BaseImageProcessorFast(BaseImageProcessor):
         kwargs.pop("default_to_square")
         kwargs.pop("data_format")
 
-        return self._preprocess(images=images, **kwargs)
+        return self._preprocess(images, *args, **kwargs)
 
     def _preprocess(
         self,
@@ -651,6 +665,8 @@ class BaseImageProcessorFast(BaseImageProcessor):
     def to_dict(self):
         encoder_dict = super().to_dict()
         encoder_dict.pop("_valid_processor_keys", None)
+        encoder_dict.pop("_valid_preprocess_args", None)
+        encoder_dict.pop("_valid_kwargs_names", None)
         return encoder_dict
 
 
