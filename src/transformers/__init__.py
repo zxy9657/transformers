@@ -292,7 +292,6 @@ else:
     # Fast tokenizers structure
     _import_structure["tokenization_utils_fast"] = ["PreTrainedTokenizerFast"]
 
-
 try:
     if not (is_sentencepiece_available() and is_tokenizers_available()):
         raise OptionalDependencyNotAvailable()
@@ -511,7 +510,6 @@ else:
         "create_optimizer",
     ]
     _import_structure["tf_utils"] = []
-
 
 # FLAX-backed objects
 try:
@@ -809,6 +807,7 @@ if TYPE_CHECKING:
         from .utils.dummy_torchvision_objects import *
     else:
         from .image_processing_utils_fast import BaseImageProcessorFast
+        from .models.superpoint import SuperPointImageProcessorFast
 
     try:
         if not (is_torchvision_available() and is_timm_available()):
@@ -1022,7 +1021,6 @@ else:
         module_spec=__spec__,
         extra_objects={"__version__": __version__},
     )
-
 
 if not is_tf_available() and not is_torch_available() and not is_flax_available():
     logger.warning_advice(
