@@ -38,8 +38,8 @@ from transformers.testing_utils import (
     torch_device,
 )
 
+from ...causal_lm_tester import CausalLMModelTest, CausalLMModelTester
 from ...generation.test_utils import GenerationTesterMixin
-from ...models.gemma.test_modeling_gemma import GemmaModelTester
 from ...test_configuration_common import ConfigTester
 from ...test_modeling_common import ModelTesterMixin, floats_tensor, ids_tensor
 
@@ -57,17 +57,25 @@ if is_torch_available():
     from transformers.pytorch_utils import is_torch_greater_or_equal
 
 
-class Gemma3ModelTester(GemmaModelTester):
+class Gemma3ModelTester(CausalLMModelTester):
     if is_torch_available():
         config_class = Gemma3TextConfig
-        model_class = Gemma3TextModel
-        for_causal_lm_class = Gemma3ForCausalLM
+        base_model_class = Gemma3TextModel
+        causal_lm_class = Gemma3ForCausalLM
+    pipeline_model_mapping = (
+        {
+            "feature-extraction": Gemma3TextModel,
+            "text-generation": Gemma3ForCausalLM,
+        }
+        if is_torch_available()
+        else {}
+    )
 
 
 @require_torch
-class Gemma3ModelTest(ModelTesterMixin, GenerationTesterMixin, unittest.TestCase):
+class Gemma3ModelTest(CausalLMModelTest, unittest.TestCase):
+    model_tester_class = Gemma3ModelTester
     all_model_classes = (Gemma3TextModel, Gemma3ForCausalLM) if is_torch_available() else ()
-    all_generative_model_classes = (Gemma3ForCausalLM,) if is_torch_available() else ()
     test_headmasking = False
     test_pruning = False
     _is_stateful = True
