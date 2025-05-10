@@ -31,12 +31,7 @@ from transformers import (
     is_torch_available,
     is_vision_available,
 )
-from transformers.testing_utils import (
-    require_soundfile,
-    require_torch,
-    slow,
-    torch_device,
-)
+from transformers.testing_utils import require_soundfile, require_torch, slow, torch_device
 from transformers.utils import is_soundfile_available
 
 from ...generation.test_utils import GenerationTesterMixin
@@ -285,7 +280,7 @@ class Phi4MultimodalIntegrationTest(unittest.TestCase):
     audio_url = "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen2-Audio/audio/f2641_0_throatclearing.wav"
 
     def setUp(self):
-        self.processor = AutoProcessor.from_pretrained(self.checkpoint_path)
+        self.processor = AutoProcessor.from_pretrained(self.checkpoint_path, revision="refs/pr/70")
         self.generation_config = GenerationConfig(max_new_tokens=20, do_sample=False)
         self.user_token = "<|user|>"
         self.assistant_token = "<|assistant|>"
@@ -303,7 +298,7 @@ class Phi4MultimodalIntegrationTest(unittest.TestCase):
 
     def test_text_only_generation(self):
         model = AutoModelForCausalLM.from_pretrained(
-            self.checkpoint_path, torch_dtype=torch.float16, device_map=torch_device
+            self.checkpoint_path, torch_dtype=torch.float16, device_map=torch_device, revision="refs/pr/70"
         )
 
         prompt = f"{self.user_token}What is the answer for 1+1? Explain it.{self.end_token}{self.assistant_token}"
@@ -322,10 +317,10 @@ class Phi4MultimodalIntegrationTest(unittest.TestCase):
 
     def test_vision_text_generation(self):
         model = AutoModelForCausalLM.from_pretrained(
-            self.checkpoint_path, torch_dtype=torch.float16, device_map=torch_device
+            self.checkpoint_path, torch_dtype=torch.float16, device_map=torch_device, revision="refs/pr/70"
         )
 
-        prompt = f"{self.user_token}<|image_1|>What is shown in this image?{self.end_token}{self.assistant_token}"
+        prompt = f"{self.user_token}<|image|>What is shown in this image?{self.end_token}{self.assistant_token}"
         inputs = self.processor(prompt, images=self.image, return_tensors="pt").to(torch_device)
 
         output = model.generate(
@@ -341,7 +336,7 @@ class Phi4MultimodalIntegrationTest(unittest.TestCase):
 
     def test_multi_image_vision_text_generation(self):
         model = AutoModelForCausalLM.from_pretrained(
-            self.checkpoint_path, torch_dtype=torch.float16, device_map=torch_device
+            self.checkpoint_path, torch_dtype=torch.float16, device_map=torch_device, revision="refs/pr/70"
         )
 
         images = []
@@ -349,7 +344,7 @@ class Phi4MultimodalIntegrationTest(unittest.TestCase):
         for i in range(1, 5):
             url = f"https://image.slidesharecdn.com/azureintroduction-191206101932/75/Introduction-to-Microsoft-Azure-Cloud-{i}-2048.jpg"
             images.append(Image.open(requests.get(url, stream=True).raw))
-            placeholder += f"<|image_{i}|>"
+            placeholder += "<|image|>"
 
         prompt = f"{self.user_token}{placeholder}Summarize the deck of slides.{self.end_token}{self.assistant_token}"
         inputs = self.processor(prompt, images, return_tensors="pt").to(torch_device)
@@ -368,11 +363,11 @@ class Phi4MultimodalIntegrationTest(unittest.TestCase):
     @require_soundfile
     def test_audio_text_generation(self):
         model = AutoModelForCausalLM.from_pretrained(
-            self.checkpoint_path, torch_dtype=torch.float16, device_map=torch_device
+            self.checkpoint_path, torch_dtype=torch.float16, device_map=torch_device, revision="refs/pr/70"
         )
 
-        prompt = f"{self.user_token}<|audio_1|>What is happening in this audio?{self.end_token}{self.assistant_token}"
-        inputs = self.processor(prompt, audios=self.audio, sampling_rate=self.sampling_rate, return_tensors="pt").to(
+        prompt = f"{self.user_token}<|audio|>What is happening in this audio?{self.end_token}{self.assistant_token}"
+        inputs = self.processor(prompt, audio=self.audio, sampling_rate=self.sampling_rate, return_tensors="pt").to(
             torch_device
         )
 
