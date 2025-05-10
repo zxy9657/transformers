@@ -17,6 +17,7 @@ import ast
 import filecmp
 import hashlib
 import importlib
+import importlib.metadata
 import importlib.util
 import os
 import re
@@ -30,6 +31,7 @@ from types import ModuleType
 from typing import Any, Optional, Union
 
 from huggingface_hub import try_to_load_from_cache
+from packaging import version
 
 from .utils import (
     HF_MODULES_CACHE,
@@ -383,7 +385,7 @@ def get_cached_module_file(
             new_files.append(module_file)
 
     except OSError:
-        logger.error(f"Could not locate the {module_file} inside {pretrained_model_name_or_path}.")
+        logger.info(f"Could not locate the {module_file} inside {pretrained_model_name_or_path}.")
         raise
 
     # Check we have all the requirements in our environment
@@ -417,7 +419,8 @@ def get_cached_module_file(
         # benefit of versioning.
         submodule_path = submodule_path / commit_hash
         full_submodule = full_submodule + os.path.sep + commit_hash
-        create_dynamic_module(full_submodule)
+        full_submodule_module_file_path = os.path.join(full_submodule, module_file)
+        create_dynamic_module(Path(full_submodule_module_file_path).parent)
 
         if not (submodule_path / module_file).exists():
             shutil.copy(resolved_module_file, submodule_path / module_file)
@@ -707,3 +710,81 @@ def resolve_trust_remote_code(trust_remote_code, model_name, has_local_code, has
         )
 
     return trust_remote_code
+
+
+def check_python_requirements(path_or_repo_id, requirements_file="requirements.txt", **kwargs):
+    """
+    Tries to locate `requirements_file` in a local folder and repo, and confirms that the environment has all the
+    python dependencies installed.
+
+    Args:
+        path_or_repo_id (`str` or `os.PathLike`):
+            This can be either:
+            - a string, the *model id* of a model repo on huggingface.co.
+            - a path to a *directory* potentially containing the file.
+        kwargs (`Dict[str, Any]`, *optional*):
+            Additional arguments to pass to `cached_file`.
+    """
+    missing_requirements = []  # tuple of (requirement, delimiter, version, installed_version)
+    try:
+        requirements = cached_file(path_or_repo_id=path_or_repo_id, filename=requirements_file, **kwargs)
+        with open(requirements, "r") as f:
+            requirements = f.readlines()
+
+        for requirement in requirements:
+            requirement = requirement.strip()
+            if not requirement or requirement.startswith("#"):
+                continue
+
+            for delimiter in ["==", ">=", "<=", ">", "<"]:
+                if delimiter in requirement:
+                    requirement_name, requirement_version = requirement.split(delimiter)
+                    break
+            else:
+                requirement_name = requirement
+                requirement_version = None
+                delimiter = None
+
+            try:
+                installed_version = importlib.metadata.version(requirement_name)
+            except importlib.metadata.PackageNotFoundError:
+                missing_requirements.append((requirement_name, delimiter, requirement_version, None))
+            else:
+                if requirement_version is not None:
+                    installed = version.parse(installed_version).base_version
+                    required = version.parse(requirement_version).base_version
+
+                    if delimiter == "==" and installed != required:
+                        missing_requirements.append(
+                            (requirement_name, delimiter, requirement_version, installed_version)
+                        )
+                    elif delimiter == ">=" and installed < required:
+                        missing_requirements.append(
+                            (requirement_name, delimiter, requirement_version, installed_version)
+                        )
+                    elif delimiter == "<=" and installed > required:
+                        missing_requirements.append(
+                            (requirement_name, delimiter, requirement_version, installed_version)
+                        )
+                    elif delimiter == ">" and installed <= required:
+                        missing_requirements.append(
+                            (requirement_name, delimiter, requirement_version, installed_version)
+                        )
+                    elif delimiter == "<" and installed >= required:
+                        missing_requirements.append(
+                            (requirement_name, delimiter, requirement_version, installed_version)
+                        )
+
+    except OSError:  # no requirements.txt
+        pass
+
+    if missing_requirements:
+        missing_requirements_str = "\n".join(
+            [
+                f"{req[0]}{req[1]}{req[2]} (installed: {req[3]})"
+                if req[1] is not None
+                else f"{req[0]} (installed: {req[3]})"
+                for req in missing_requirements
+            ]
+        )
+        raise ValueError(f"Missing requirements for {path_or_repo_id}:\n{missing_requirements_str}")
